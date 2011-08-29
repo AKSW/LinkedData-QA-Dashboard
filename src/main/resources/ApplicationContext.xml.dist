@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE beans PUBLIC "-//SPRING//DTD BEAN//EN" "http://www.springframework.org/dtd/spring-beans.dtd">
+<beans>
+	<description></description>
+
+	<bean id="snapshotRepoPath" class="java.lang.String">
+  		<constructor-arg type="java.lang.String" value="/home/raven/data/linkspec-repo"/>
+	</bean>	
+
+	<bean id="packageRepoPath" class="java.lang.String">
+  		<constructor-arg type="java.lang.String" value="/localhost/home/raven/Projects/Current/IntelliJ/24-7-platform/link-specifications/"/>
+	</bean>	
+
+
+	<!--
+	<bean id="application" class="main.Application">
+		<property name="marshaller" ref="castorMarshaller" />
+		<property name="unmarshaller" ref="castorMarshaller" />
+	</bean>
+     -->
+      
+    <!--
+	<bean id="lgdDataBase" class="org.example.myproject.shared.ConnectionConfig">
+		<property name="hostName"     value="localhost" />
+		<property name="dataBaseName" value="unittest_lgd" />
+		<property name="userName"     value="postgres" />
+		<property name="passWord"     value="postgres" />
+	</bean>
+	 -->
+	 
+</beans>
