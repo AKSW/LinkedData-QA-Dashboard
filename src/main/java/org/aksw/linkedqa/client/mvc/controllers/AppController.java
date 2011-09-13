@@ -61,6 +61,10 @@ import com.google.gwt.user.client.rpc.AsyncCallback;
 import com.google.gwt.user.client.ui.ListBox;
 import com.google.gwt.user.client.ui.RootPanel;
 
+
+// TODO We need some class that tells us how to use (load & display) the measures
+
+
 public class AppController
 	extends Controller
 {
@@ -83,6 +87,11 @@ public class AppController
 
 	// Here we need to be aware of our views
 	
+	// TODO Replace with a proper map
+	String[] measureNames = new String[] {"precision", "recall", "duplicates", "linkSetErrorCount"};
+	private int activeMeasureIndex = 0;
+	
+	private String activePackageName = null;
 	
 	public AppController() {
 		registerEventTypes(AppEvents.Init);
@@ -144,11 +153,11 @@ public class AppController
 		return result;
 	}
 
-	public void addTimeLineChart(ChartModel model, ListStore<Model> listStore) {
+	public void addTimeLineChart(ChartModel model, String measureName, ListStore<Model> listStore) {
 
 		BarChart bar = new BarChart(BarStyle.GLASS);
 	    bar.setColour("#00aa00");
-	    BarDataProvider barProvider = new BarDataProvider("precision", "snapshotDate");//new BarDataProvider("alphasales", "month");  
+	    BarDataProvider barProvider = new BarDataProvider(measureName, "snapshotDate");//new BarDataProvider("alphasales", "month");  
 	    barProvider.bind(listStore);  
 	    bar.setDataProvider(barProvider); 
 	    //bar.addChartListener(listener);  
@@ -200,12 +209,14 @@ public class AppController
 	    return model;
 	}
 	
-	public void initOverviewChart() {
+	public void resetOverviewChart(int measureIndex) {
+		String measureName = this.measureNames[measureIndex];
+		
 		ListStore<Model> store = Registry.get(Constants.EVALUATION_STORE);
 
 		
 		int n = 10;
-		ListStore<Model> histogram = deriveHistogram(store, "precision", n);
+		ListStore<Model> histogram = deriveHistogram(store, measureName, n);
 		//ListStore<Model> h = deriveHistogram(store, "recall", n);
 		
 		/*
@@ -229,8 +240,12 @@ public class AppController
 		
 		//histogram.f
 		
+		String snapshotTitle = "latest snapshot";
+		//snapshot at 19-3-2011
 		
-		ChartModel model = new ChartModel("Latest precision distribution",  
+		String title = measureName + " distribution for " + snapshotTitle;
+		
+		ChartModel model = new ChartModel(title,  
 		        "font-size: 14px; font-family: Verdana; text-align: center;");  
 		    model.setBackgroundColour("#fefefe");  
 		    model.setLegend(new Legend(Position.TOP, true));  
@@ -313,6 +328,13 @@ public class AppController
 		}
 	}
 	
+	
+	public void resetView(int measureIndex) {
+		activeMeasureIndex = measureIndex;
+		resetOverviewChart(measureIndex);
+		resetTimeLineChart();
+	}
+	
 	public void onInit(AppEvent event) {		
 
 		// Make sure the other widgets initialize
@@ -371,17 +393,21 @@ public class AppController
 		infoPanel.add(combo);
 		*/
 
-		ListBox lb = new ListBox();
+		final ListBox lb = new ListBox();
 		lb.addItem("Precision");
 		lb.addItem("Recall");
 		lb.addItem("Duplicates");
+		lb.addItem("Link set errors");
 		
 		lb.addChangeHandler(new ChangeHandler() {
 			public void onChange(ChangeEvent event) {
 				
-				MessageBox.info("aoeu", "aoeu", null);
-				// TODO Auto-generated method stub
 				
+				int index = lb.getSelectedIndex();
+				if(index < 0) {
+					return;
+				}
+				resetView(index);
 			}
 		});
 		
@@ -484,40 +510,7 @@ public class AppController
 		
 		service = (GreetingServiceAsync)Registry.get(Constants.MAIN_SERVICE);
 		
-		
-		service.getLatestEvaluations(new AsyncCallback<Map<String, BaseModel>>() {			
-			public void onSuccess(Map<String, BaseModel> result) {
-			
-				ListStore<Model> evalStore = Registry.get(Constants.EVALUATION_STORE);
-	
-				for(Entry<String, BaseModel> entry : result.entrySet()) {
-					entry.getValue().set("name", entry.getKey());
-					
-					Double precision = tryParseDouble(entry.getValue().get("precision"));
-					if(precision == null) {
-						continue;
-					}
-					
-					GWT.log("name :" + entry.getValue().get("name") + " prec: " + entry.getValue().get("precision"));
-					
-					evalStore.add(entry.getValue());
-				}
-			
-				initOverviewChart();
-				
-				//MessageBox.info("yay", "eee", null);
-				//ListStore<ModelData> taskStore = Registry.get(Constants.EVALUATION_STORE);
-				//taskStore.add(result);
-				
-				//GWT.log("Loaded " + taskStore.getCount() + " task descriptions");
-				
-				//Dispatcher.forwardEvent(AppEvents.TasksRetrieved, result);
-			}
-			
-			public void onFailure(Throwable caught) {
-				Dispatcher.forwardEvent(AppEvents.Error, caught);
-			}
-		});
+		resetEvaluationGrid();
 		
 		/*
 		service.test(new AsyncCallback<String>() {			
@@ -579,6 +572,44 @@ public class AppController
 
 	}
 	
+	public void resetEvaluationGrid() {
+
+		service.getLatestEvaluations(new AsyncCallback<Map<String, BaseModel>>() {			
+			public void onSuccess(Map<String, BaseModel> result) {
+			
+				ListStore<Model> evalStore = Registry.get(Constants.EVALUATION_STORE);
+	
+				for(Entry<String, BaseModel> entry : result.entrySet()) {
+					entry.getValue().set("name", entry.getKey());
+					
+					Double precision = tryParseDouble(entry.getValue().get("precision"));
+					if(precision == null) {
+						continue;
+					}
+					
+					GWT.log("name :" + entry.getValue().get("name") + " prec: " + entry.getValue().get("precision"));
+					
+					evalStore.add(entry.getValue());
+				}
+			
+				resetOverviewChart(activeMeasureIndex);
+				
+				//MessageBox.info("yay", "eee", null);
+				//ListStore<ModelData> taskStore = Registry.get(Constants.EVALUATION_STORE);
+				//taskStore.add(result);
+				
+				//GWT.log("Loaded " + taskStore.getCount() + " task descriptions");
+				
+				//Dispatcher.forwardEvent(AppEvents.TasksRetrieved, result);
+			}
+			
+			public void onFailure(Throwable caught) {
+				Dispatcher.forwardEvent(AppEvents.Error, caught);
+			}
+		});
+	}
+	
+	
 	public void onError(AppEvent event) {
 		MessageBox.alert("Error", "" + event.getData(), null);
 	}
@@ -590,9 +621,19 @@ public class AppController
 		
 		Model model = event.getData();
 		
+		activePackageName = (String)model.get("name");
 		//final Format dateFormatter = new SimpleDateFormat("%E %M %y");
 		
-		service.getTimeLineEvaluations((String)model.get("name"), new AsyncCallback<TimeLinePackage>() {			
+		resetTimeLineChart();
+	}
+
+	public void resetTimeLineChart()
+	{
+		resetTimeLineChart(activePackageName, this.measureNames[this.activeMeasureIndex]);
+	}
+	
+	public void resetTimeLineChart(String packageName, final String measureName) {
+		service.getTimeLineEvaluations(packageName, new AsyncCallback<TimeLinePackage>() {			
 			public void onSuccess(TimeLinePackage result) {
 				
 				ListStore<Model> store = new ListStore<Model>();
@@ -606,43 +647,45 @@ public class AppController
 					tmp.set("snapshotDate", displayDate);
 					store.add(tmp);
 				}
-				
-				
 									
-				timeLineChart = ChartWidget.createChart();
-
-				ChartModel chartModel = createTimeLineChartModel("Time line for " + result.getName());
-				noChartLabel.removeFromParent();
-				addTimeLineChart(chartModel, store);
-				timeLineChart.setChartModel(chartModel);
-
-
-				if(timeLineChart != null) {
-					timeLineChart.removeFromParent();
-				}
-				timeLineChartContainer.add(timeLineChart);
-
-				
-				//store.addFilter(filter)
-				//MessageBox.info("AOEU", "" + result.toString(), null);
-				
-				//ListStore<ModelData> taskStore = Registry.get(Constants.TASK_STORE);
-				//taskStore.add(result);
-				
-				//GWT.log("Loaded " + taskStore.getCount() + " task descriptions");
-				
-				//Dispatcher.forwardEvent(AppEvents.TasksRetrieved, result);
+				resetTimeLineChart(result.getName(), measureName, store);
 			}
-			
 			public void onFailure(Throwable caught) {
 				Dispatcher.forwardEvent(AppEvents.Error, caught);
 			}
 		});
+	}
+
+	public void resetTimeLineChart(String name, String measureName, ListStore<Model> store) {
+
+		GWT.log("TimeLine: " + name + ", " + measureName);
+
+		if(timeLineChart != null) {
+			timeLineChart.removeFromParent();
+		}
+
+		timeLineChart = ChartWidget.createChart();
+
+		ChartModel chartModel = createTimeLineChartModel("Time line for " + name);
+		noChartLabel.removeFromParent();
+		addTimeLineChart(chartModel, measureName, store);
+		timeLineChart.setChartModel(chartModel);
+
+
+		timeLineChartContainer.add(timeLineChart);
 
 		
+		//store.addFilter(filter)
+		//MessageBox.info("AOEU", "" + result.toString(), null);
 		
+		//ListStore<ModelData> taskStore = Registry.get(Constants.TASK_STORE);
+		//taskStore.add(result);
+		
+		//GWT.log("Loaded " + taskStore.getCount() + " task descriptions");
+		
+		//Dispatcher.forwardEvent(AppEvents.TasksRetrieved, result);
 	}
-	
+
 	
 	public void onTaskSelectionChanged(AppEvent event) {
 		TaskDescription taskDesc = event.getData();
