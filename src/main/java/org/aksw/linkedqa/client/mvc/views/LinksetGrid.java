@@ -23,7 +23,10 @@ import com.extjs.gxt.ui.client.widget.grid.ColumnData;
 import com.extjs.gxt.ui.client.widget.grid.ColumnModel;
 import com.extjs.gxt.ui.client.widget.grid.Grid;
 import com.extjs.gxt.ui.client.widget.grid.GridCellRenderer;
+import com.extjs.gxt.ui.client.widget.grid.GridGroupRenderer;
 import com.extjs.gxt.ui.client.widget.grid.GridSelectionModel;
+import com.extjs.gxt.ui.client.widget.grid.GroupColumnData;
+import com.extjs.gxt.ui.client.widget.grid.GroupingView;
 import com.extjs.gxt.ui.client.widget.layout.FitLayout;
 import com.extjs.gxt.ui.client.widget.table.NumberCellRenderer;
 import com.extjs.gxt.ui.client.widget.tips.QuickTip;
@@ -270,7 +273,26 @@ public class LinksetGrid extends ContentPanel {
 	      }  
 	    });*/  
 		
+		GroupingView view = new GroupingView();  
+	    view.setShowGroupedColumn(false);  
+	    view.setForceFit(true);  
+	    view.setGroupRenderer(new GridGroupRenderer() {  
+	      public String render(GroupColumnData data) {
+	    	  // . data.field
+	    	  String groupName = data.gvalue.toString(); //cm.getColumnById(data.field).getHeader();
+	    	  
+	    	  return groupName;
+	        /*
+	    	  String f = cm.getColumnById(data.field).getHeader();  
+	        String l = data.models.size() == 1 ? "Item" : "Items";  
+	        return f + ": " + data.group + " (" + data.models.size() + " " + l + ")";
+	        */  
+	      }  
+	    });
+
+		
 		grid = new Grid<Model>(getStocks(), cm);
+	    grid.setView(view);
 		grid.setStyleAttribute("borderTop", "none");
 		//grid.setAutoHeight(true);
 		grid.setAutoExpandColumn("name");

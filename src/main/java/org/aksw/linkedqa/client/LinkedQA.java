@@ -8,6 +8,7 @@ import com.extjs.gxt.ui.client.Registry;
 import com.extjs.gxt.ui.client.data.Model;
 import com.extjs.gxt.ui.client.data.ModelData;
 import com.extjs.gxt.ui.client.mvc.Dispatcher;
+import com.extjs.gxt.ui.client.store.GroupingStore;
 import com.extjs.gxt.ui.client.store.ListStore;
 import com.extjs.gxt.ui.client.util.Theme;
 import com.extjs.gxt.ui.client.widget.Viewport;
@@ -27,7 +28,7 @@ public class LinkedQA implements EntryPoint {
 	  Registry.register(Constants.MAIN_SERVICE, GWT.create(GreetingService.class));
 	  Registry.register(Constants.TASK_STORE, new ListStore<ModelData>());
 
-	  Registry.register(Constants.EVALUATION_STORE, new ListStore<Model>());
+	  Registry.register(Constants.EVALUATION_STORE, new GroupingStore<Model>());
 	  
 	  
 	  GXT.setDefaultTheme(Theme.BLUE, true);

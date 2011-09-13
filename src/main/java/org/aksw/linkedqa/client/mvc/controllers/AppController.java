@@ -41,19 +41,25 @@ import com.extjs.gxt.ui.client.event.SelectionChangedEvent;
 import com.extjs.gxt.ui.client.mvc.AppEvent;
 import com.extjs.gxt.ui.client.mvc.Controller;
 import com.extjs.gxt.ui.client.mvc.Dispatcher;
+import com.extjs.gxt.ui.client.store.GroupingStore;
 import com.extjs.gxt.ui.client.store.ListStore;
 import com.extjs.gxt.ui.client.widget.ContentPanel;
 import com.extjs.gxt.ui.client.widget.Label;
 import com.extjs.gxt.ui.client.widget.LayoutContainer;
 import com.extjs.gxt.ui.client.widget.MessageBox;
+import com.extjs.gxt.ui.client.widget.Slider;
 import com.extjs.gxt.ui.client.widget.TabItem;
 import com.extjs.gxt.ui.client.widget.TabPanel;
 import com.extjs.gxt.ui.client.widget.Viewport;
+import com.extjs.gxt.ui.client.widget.grid.GridView;
+import com.extjs.gxt.ui.client.widget.grid.GroupingView;
 import com.extjs.gxt.ui.client.widget.layout.ColumnLayout;
+import com.extjs.gxt.ui.client.widget.layout.FillData;
 import com.extjs.gxt.ui.client.widget.layout.FitLayout;
-import com.extjs.gxt.ui.client.widget.layout.RowData;
 import com.extjs.gxt.ui.client.widget.layout.RowLayout;
 import com.google.gwt.core.client.GWT;
+import com.google.gwt.dom.client.Element;
+import com.google.gwt.dom.client.NodeList;
 import com.google.gwt.event.dom.client.ChangeEvent;
 import com.google.gwt.event.dom.client.ChangeHandler;
 import com.google.gwt.i18n.client.DateTimeFormat;
@@ -61,6 +67,10 @@ import com.google.gwt.user.client.rpc.AsyncCallback;
 import com.google.gwt.user.client.ui.ListBox;
 import com.google.gwt.user.client.ui.RootPanel;
 
+
+interface Transformer<I, O> {
+	O transform(I input);
+}
 
 // TODO We need some class that tells us how to use (load & display) the measures
 
@@ -120,6 +130,31 @@ public class AppController
 	
 	int getValueClass(double value, double scale, int n) {
 		return Math.min(n - 1, (int)(value * scale * n));		
+	}
+	
+	
+	/**
+	 * Returns an object that creates keys for grouping.
+	 * 
+	 * @param min
+	 * @param max
+	 * @param n
+	 * @return
+	 */
+	public static Transformer<Number, Integer> createGrouper(final int n, final Number scale) {
+		//final double _min = min.doubleValue();
+		//final double _max = max.doubleValue();
+		
+		return new Transformer<Number, Integer>() {
+			public Integer transform(Number input) {				
+				//double val = Math.max(_input, _min);
+				//val = Math.min(val, _max);
+				
+				//double scale = (_max - _min) / (double)(n - 1);
+				
+				return (int)(input.doubleValue() * scale.doubleValue() * n);		
+			}
+		};
 	}
 	
 	ListStore<Model> deriveHistogram(ListStore<? extends Model> store, String attribute, int n) {
@@ -209,6 +244,7 @@ public class AppController
 	    return model;
 	}
 	
+	
 	public void resetOverviewChart(int measureIndex) {
 		String measureName = this.measureNames[measureIndex];
 		
@@ -260,8 +296,18 @@ public class AppController
 		        	int row = ce.getChartConfig().getValues().indexOf(ce.getDataType());  
 		        	int col = ce.getChartModel().getChartConfigs().indexOf(ce.getChartConfig()) + 1;
 		          
-		        	MessageBox.info("Magic not implemented yet.", "" + row + ", "  + col + " --- " + ce.getChartConfig().getDataProvider().toString(), null);
+		        	//MessageBox.info("Magic not implemented yet.", "" + row + ", "  + col + " --- " + ce.getChartConfig().getDataProvider().toString(), null);
 
+		        	GridView gridView = linksetGrid.getGrid().getView();
+		        	if(gridView instanceof GroupingView) {
+		        		GroupingView groupingView = (GroupingView)gridView;
+		        		NodeList<Element> groups = groupingView.getGroups();
+		        		
+		        		groups.getItem(row).scrollIntoView();
+		        	}
+
+		        	
+		        	//.getGroups().getItem(0).sc
 		        	
 		        	//ce.getChartModel().g
 		        	
@@ -413,6 +459,18 @@ public class AppController
 		
 		infoPanel.add(lb);
 		
+
+		/* Slider for the snapshot date */
+		int margins = 30;
+
+		Slider slider = new Slider();
+	    slider.setWidth(300);
+	    slider.setIncrement(1);
+	    slider.setMaxValue(200);
+	    slider.setClickToChange(false);
+	    infoPanel.add(slider, new FillData(margins));
+		
+
 		
 		//combo.setEditable(false);
 		//selection.setAllowBlank(false);
@@ -577,10 +635,23 @@ public class AppController
 		service.getLatestEvaluations(new AsyncCallback<Map<String, BaseModel>>() {			
 			public void onSuccess(Map<String, BaseModel> result) {
 			
-				ListStore<Model> evalStore = Registry.get(Constants.EVALUATION_STORE);
-	
+				//ListStore<Model> evalStore = Registry.get(Constants.EVALUATION_STORE);
+				GroupingStore<Model> evalStore = Registry.get(Constants.EVALUATION_STORE);
+				
+				evalStore.groupBy("precision_group");
+				
+				Transformer<Number, Integer> grouper = createGrouper(10, 1.0);
+				
 				for(Entry<String, BaseModel> entry : result.entrySet()) {
 					entry.getValue().set("name", entry.getKey());
+					
+					Model model = entry.getValue();
+					double value = model.get("precision");
+					model.set("precision_group", grouper.transform(value));
+
+					value = model.get("recall");
+					model.set("recall_group", grouper.transform(value));
+
 					
 					Double precision = tryParseDouble(entry.getValue().get("precision"));
 					if(precision == null) {
