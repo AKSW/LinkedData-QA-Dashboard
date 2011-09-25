@@ -105,29 +105,39 @@ protected void initialize() {
 
 		ColumnConfig column = new ColumnConfig();
 		column.setId("name");
-		column.setHeader("Task name");
+		column.setHeader("Linkset name");
 		column.setWidth(200);
 		column.setRowHeader(true);
 		configs.add(column);
 
 		column = new ColumnConfig();
-		column.setId("symbol");
-		column.setHeader("Symbol");
+		column.setId("direction");
+		column.setHeader("Direction");
+		column.setAlignment(HorizontalAlignment.RIGHT);
 		column.setWidth(100);
 		configs.add(column);
 
 		column = new ColumnConfig();
-		column.setId("last");
-		column.setHeader("Last");
+		column.setId("sampled");
+		column.setHeader("Sampled");
+		column.setAlignment(HorizontalAlignment.RIGHT);
+		column.setWidth(100);
+		configs.add(column);
+
+		column = new ColumnConfig();
+		column.setId("sampleSize");
+		column.setHeader("Sample size");
 		column.setAlignment(HorizontalAlignment.RIGHT);
 		column.setWidth(75);
 		//column.setRenderer(gridNumber);
 		configs.add(column);
 
+		/*
 		column = new ColumnConfig("change", "Change", 100);
 		column.setAlignment(HorizontalAlignment.RIGHT);
 		//column.setRenderer(change);
 		configs.add(column);
+		*/
 
 		column = new ColumnConfig("date", "Finished", 100);
 		column.setAlignment(HorizontalAlignment.RIGHT);

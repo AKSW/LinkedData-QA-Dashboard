@@ -14,7 +14,6 @@ import org.aksw.linkedqa.client.mvc.views.ChartView;
 import org.aksw.linkedqa.client.mvc.views.LinksetGrid;
 import org.aksw.linkedqa.client.mvc.views.TaskGridView;
 import org.aksw.linkedqa.shared.MyChart;
-import org.aksw.linkedqa.shared.TaskDescription;
 import org.aksw.linkedqa.shared.TimeLinePackage;
 
 import com.extjs.gxt.charts.client.Chart;
@@ -38,6 +37,7 @@ import com.extjs.gxt.ui.client.data.ModelData;
 import com.extjs.gxt.ui.client.event.Events;
 import com.extjs.gxt.ui.client.event.Listener;
 import com.extjs.gxt.ui.client.event.SelectionChangedEvent;
+import com.extjs.gxt.ui.client.event.SliderEvent;
 import com.extjs.gxt.ui.client.mvc.AppEvent;
 import com.extjs.gxt.ui.client.mvc.Controller;
 import com.extjs.gxt.ui.client.mvc.Dispatcher;
@@ -54,7 +54,6 @@ import com.extjs.gxt.ui.client.widget.Viewport;
 import com.extjs.gxt.ui.client.widget.grid.GridView;
 import com.extjs.gxt.ui.client.widget.grid.GroupingView;
 import com.extjs.gxt.ui.client.widget.layout.ColumnLayout;
-import com.extjs.gxt.ui.client.widget.layout.FillData;
 import com.extjs.gxt.ui.client.widget.layout.FitLayout;
 import com.extjs.gxt.ui.client.widget.layout.RowLayout;
 import com.google.gwt.core.client.GWT;
@@ -63,6 +62,9 @@ import com.google.gwt.dom.client.NodeList;
 import com.google.gwt.event.dom.client.ChangeEvent;
 import com.google.gwt.event.dom.client.ChangeHandler;
 import com.google.gwt.i18n.client.DateTimeFormat;
+import com.google.gwt.json.client.JSONObject;
+import com.google.gwt.json.client.JSONParser;
+import com.google.gwt.json.client.JSONValue;
 import com.google.gwt.user.client.rpc.AsyncCallback;
 import com.google.gwt.user.client.ui.ListBox;
 import com.google.gwt.user.client.ui.RootPanel;
@@ -465,16 +467,19 @@ public class AppController
 
 		Slider slider = new Slider();
 	    slider.setWidth(300);
-	    slider.setIncrement(1);
-	    slider.setMaxValue(200);
-	    slider.setClickToChange(false);
-	    infoPanel.add(slider, new FillData(margins));
-		
+	    //slider.setIncrement(10);
+	    //slider.setMaxValue(200);
+	    slider.setClickToChange(true);
 
+	    //infoPanel.add(slider, new FillData(margins));
+	    overviewPanel.add(slider);
 		
-		//combo.setEditable(false);
-		//selection.setAllowBlank(false);
-		//selection.set
+	    slider.addListener(Events.Change, new Listener<SliderEvent>() {
+			public void handleEvent(SliderEvent se) {
+				
+				MessageBox.info("info", "new value is: " + se.getNewValue(), null);
+			}
+	    });
 		
 
 		
@@ -485,7 +490,7 @@ public class AppController
 		
 		LayoutContainer tmpContainer = new LayoutContainer();
 		tmpContainer.setLayout(new ColumnLayout());
-		
+
 		LayoutContainer chartContainer = new LayoutContainer();
 		chartContainer.setLayout(new FitLayout());
 		chartContainer.setSize(300, 300);
@@ -538,21 +543,32 @@ public class AppController
 		overviewTab.add(overviewPanel);
 		
 		
-		TabItem linksetTab = new TabItem();
-		linksetTab.setClosable(false);
-		linksetTab.setText("Metrics");
+		TabItem metricsTab = new TabItem();
+		metricsTab.setLayout(new FitLayout());
+		metricsTab.setLayoutOnChange(true);
+		metricsTab.setClosable(false);
+		metricsTab.setText("Metrics");
 
-		linksetTab.setSize(500, 500);
-		linksetTab.setLayout(new FitLayout());
+		LayoutContainer metricsPanel = new LayoutContainer();
+		metricsPanel.setLayout(new RowLayout()); //Orientation.HORIZONTAL
+		metricsPanel.setScrollMode(Scroll.AUTO);
+		metricsPanel.setLayoutOnChange(true);
 
-		linksetTab.add(taskView.getTaskGrid());
-		linksetTab.add(chartView.getWidget());
+
+		metricsPanel.add(taskView.getTaskGrid());
+		metricsPanel.add(chartView.getWidget());
 		
 		//item.add(new Label("Test Content"));
 
 		
+		// TODO: Outliers and statistics 
+		
+		
+		
+		metricsTab.add(metricsPanel);
+		
 		panel.add(overviewTab);
-		panel.add(linksetTab);
+		panel.add(metricsTab);
 	
 
 		
@@ -592,9 +608,55 @@ public class AppController
 		
 
 
+		service.getLatestMetricsEvaluations(new AsyncCallback<Map<String, Model>>() {
+			public void onSuccess(Map<String, Model> result) {
+				ListStore<Model> taskStore = Registry.get(Constants.TASK_STORE);
+
+				for(Entry<String, Model> entry : result.entrySet()) {
+					
+					Model model = entry.getValue();
+					
+					String str = model.get("metricsReport");
+					
+					GWT.log(str);
+					
+					JSONValue json = JSONParser.parseStrict(str);
+					JSONObject map = json.isObject();
+
+					//Map<String, Object> map = JsonConverter.decode(str);
+					
+					//GWT.log(map.keySet().toString());
+					//GWT.log("ss = " + map.get("sampleSize"));
+					model.set("sampled", map.get("sampled").isBoolean());
+					model.set("sampleSize", map.get("sampleSize").isNumber());
+					model.set("direction", map.get("direction").isNumber());
+					
+					
+					//String o = entry.getValue().get("metricsReport");
+					taskStore.add(model);
+				}
+				//GWT.log("Loaded " + taskStore.getCount() + " task descriptions");
+				
+				Dispatcher.forwardEvent(AppEvents.TasksRetrieved, result);
+
+				/*
+				GWT.log(result.toString());
+*/				
+				
+				
+			}
+
+			public void onFailure(Throwable caught) {
+				Dispatcher.forwardEvent(AppEvents.Error, caught);
+			}
+		});
+		
+		
+		/*
 		service.getTaskDescriptions(new AsyncCallback<List<TaskDescription>>() {			
 			public void onSuccess(List<TaskDescription> result) {
 				
+				GWT.log("Result is " + result);
 				ListStore<ModelData> taskStore = Registry.get(Constants.TASK_STORE);
 				taskStore.add(result);
 				
@@ -607,11 +669,12 @@ public class AppController
 				Dispatcher.forwardEvent(AppEvents.Error, caught);
 			}
 		});
+		*/
 
 		
 		
-		taskView.getTaskGrid().getGrid().getSelectionModel().addListener(Events.SelectionChange, new Listener<SelectionChangedEvent<TaskDescription>>() {
-			public void handleEvent(SelectionChangedEvent<TaskDescription> event) {
+		taskView.getTaskGrid().getGrid().getSelectionModel().addListener(Events.SelectionChange, new Listener<SelectionChangedEvent<Model>>() {
+			public void handleEvent(SelectionChangedEvent<Model> event) {
 				// We need to notify some component that updates the diagrams
 				//MessageBox.alert("Info", "" + event.getSelectedItem(), null);
 				Dispatcher.forwardEvent(AppEvents.TaskSelectionChanged, event.getSelectedItem());
@@ -632,8 +695,10 @@ public class AppController
 	
 	public void resetEvaluationGrid() {
 
-		service.getLatestEvaluations(new AsyncCallback<Map<String, BaseModel>>() {			
-			public void onSuccess(Map<String, BaseModel> result) {
+		//service.get
+		
+		service.getLatestEvaluations(new AsyncCallback<Map<String, Model>>() {			
+			public void onSuccess(Map<String, Model> result) {
 			
 				//ListStore<Model> evalStore = Registry.get(Constants.EVALUATION_STORE);
 				GroupingStore<Model> evalStore = Registry.get(Constants.EVALUATION_STORE);
@@ -642,7 +707,7 @@ public class AppController
 				
 				Transformer<Number, Integer> grouper = createGrouper(10, 1.0);
 				
-				for(Entry<String, BaseModel> entry : result.entrySet()) {
+				for(Entry<String, Model> entry : result.entrySet()) {
 					entry.getValue().set("name", entry.getKey());
 					
 					Model model = entry.getValue();
@@ -759,8 +824,8 @@ public class AppController
 
 	
 	public void onTaskSelectionChanged(AppEvent event) {
-		TaskDescription taskDesc = event.getData();
-		String packageId = taskDesc.getName();
+		Model model = event.getData();
+		String packageId = model.get("name");
 		
 
 

@@ -8,7 +8,7 @@ import org.aksw.linkedqa.shared.TaskDescription;
 import org.aksw.linkedqa.shared.TimeLinePackage;
 
 import com.extjs.gxt.charts.client.model.ChartModel;
-import com.extjs.gxt.ui.client.data.BaseModel;
+import com.extjs.gxt.ui.client.data.Model;
 import com.google.gwt.user.client.rpc.RemoteService;
 import com.google.gwt.user.client.rpc.RemoteServiceRelativePath;
 
@@ -28,8 +28,12 @@ public interface GreetingService extends RemoteService {
 	List<MyChart> getCharts2(String packageId);
 	List<ChartModel> getCharts(String packageId);
 	
-	public Map<String, BaseModel> getLatestEvaluations() throws Exception;
+	public Map<String, Model> getLatestEvaluations() throws Exception;
 	
 	
 	TimeLinePackage getTimeLineEvaluations(String packageId);
+	
+	
+	Map<String, Model> getLatestMetricsEvaluations() throws Exception;
+
 }

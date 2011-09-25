@@ -4,6 +4,8 @@ import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Map.Entry;
+import java.util.NavigableSet;
+import java.util.TreeSet;
 
 import org.aksw.linkedqa.shared.Package;
 import org.aksw.linkedqa.shared.TimeLinePackage;
@@ -11,7 +13,6 @@ import org.ini4j.InvalidFileFormatException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import com.extjs.gxt.ui.client.data.BaseModel;
 import com.extjs.gxt.ui.client.data.Model;
 
 
@@ -24,13 +25,30 @@ public class TimeLineCollectionRepository {
 
 	private Map<String, TimeLinePackage> nameToPackage = new HashMap<String, TimeLinePackage>();
 	
+	public TimeLineCollectionRepository()
+	{
+	}
+	
+	
 	public TimeLineCollectionRepository(RSnapshotRepository<PackageRepository> backend) throws InvalidFileFormatException, IOException {
 		this.backend = backend;
 		
+		// TODO Actually this loads all metadata about packages; additional data must be fetched
+		// with specific methods
 		this.loadAllPackages();
 	}
 	
 	
+	
+	/**
+	 * Returns 
+	 * 
+	 * @return
+	 */
+	public NavigableSet<Integer> getTimeLines()
+	{
+		return new TreeSet<Integer>(backend.getRepos(intervalType).keySet());
+	}
 	
 	/**
 	 * Scans the latest version of the repo for its packages,
@@ -54,7 +72,8 @@ public class TimeLineCollectionRepository {
 
 			for(Package p : r.getMap().values()) {
 		
-				BaseModel model = r.getPositiveEvaluation(p.getName()); //);.getName());
+				//BaseModel model = r.getPositiveEvaluation(p.getName()); //);.getName());
+				Model model = r.getData(p.getName());
 				if(model != null) {				
 					p.setProperties(model.getProperties());
 				}
@@ -84,16 +103,17 @@ public class TimeLineCollectionRepository {
 		return backend.getLatest(intervalType).getPositiveEvaluation(packageId); //);.getName());
 	}*/
 
-	public Map<String, BaseModel> getLatestEvaluations()
+	public Map<String, Model> getLatestEvaluations()
 				throws InvalidFileFormatException, IOException
 	{
-		Map<String, BaseModel> result = new HashMap<String, BaseModel>();
+		Map<String, Model> result = new HashMap<String, Model>();
 
 		for(Entry<String, TimeLinePackage> entry : nameToPackage.entrySet()) {
 			Model p = entry.getValue().getMap().values().iterator().next();
 			String name = (String)p.get("name");
 			
-			BaseModel model = backend.getLatest(intervalType).getPositiveEvaluation(name); //);.getName());
+			//BaseModel model = backend.getLatest(intervalType).getPositiveEvaluation(name); //);.getName());
+			Model model = backend.getLatest(intervalType).getData(name);
 			if(model == null) {
 				continue;
 			}
@@ -105,5 +125,6 @@ public class TimeLineCollectionRepository {
 		return result;
 	}
 	
-		
+
 }
+

@@ -45,6 +45,18 @@ public class MyApplicationContext
     	return get("packageRepoPath");
     }
     
+
+    
+    public String getMetricsSnapshotRepoPath()
+    {
+    	return get("metricsSnapshotRepoPath");
+    }
+    
+    public String getMetricsPackageRepoPath()
+    {
+    	return get("metricsPackageRepoPath");
+    }
+    
     
     @SuppressWarnings("unchecked")
 	public <T> T get(String beanName)

@@ -6,10 +6,9 @@ import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
 import java.util.Map;
+import java.util.Map.Entry;
 import java.util.Set;
 
-import org.aksw.commons.collections.DescenderIterator;
-import org.aksw.commons.collections.FileDescender;
 import org.aksw.linkedqa.client.GreetingService;
 import org.aksw.linkedqa.domain.Factory;
 import org.aksw.linkedqa.domain.PackageRepository;
@@ -30,6 +29,7 @@ import com.extjs.gxt.charts.client.model.Legend.Position;
 import com.extjs.gxt.charts.client.model.charts.BarChart;
 import com.extjs.gxt.charts.client.model.charts.CylinderBarChart;
 import com.extjs.gxt.ui.client.data.BaseModel;
+import com.extjs.gxt.ui.client.data.Model;
 import com.google.gwt.user.server.rpc.RemoteServiceServlet;
 import com.ibm.icu.util.GregorianCalendar;
 
@@ -46,6 +46,9 @@ public class GreetingServiceImpl extends RemoteServiceServlet implements
 	
 	
 	private TimeLineCollectionRepository timeLineRepo;
+	
+	
+	private TimeLineCollectionRepository metricsTimeLineRepo;
 	
 	//private TimeLinePa
 	
@@ -100,8 +103,47 @@ public class GreetingServiceImpl extends RemoteServiceServlet implements
 		
 		RSnapshotRepository<PackageRepository> repo = new RSnapshotRepository<PackageRepository>(new File(snapshotRepoPath), factory);
 		
-		timeLineRepo = new TimeLineCollectionRepository(repo);
+		//timeLineRepo = new TimeLineCollectionRepository(repo);
+		
+		
+		timeLineRepo = new TimeLineCollectionRepository();
+
+
+		
+		
+		
+		
+		
+		final String metricsSnapshotRepoPath = MyApplicationContext.get().getMetricsSnapshotRepoPath();
+		final String metricsPackageRepoPath = MyApplicationContext.get().getMetricsPackageRepoPath();
+
+		
+		Factory<File, PackageRepository> metricsFactory = new Factory<File, PackageRepository>() {
+			public PackageRepository create(File file) {
+
+				// TODO URGENT The date should be read from some metadata file
+				GregorianCalendar lastModificationDate = new GregorianCalendar();
+				lastModificationDate.setTime(new Date(file.lastModified()));
+
+				return new PackageRepository(file.getAbsolutePath() + metricsPackageRepoPath, lastModificationDate);
+			}
+		};
+
+		
+		RSnapshotRepository<PackageRepository> metricsRepo = new RSnapshotRepository<PackageRepository>(new File(metricsSnapshotRepoPath), metricsFactory);
+		
+		metricsTimeLineRepo = new TimeLineCollectionRepository(metricsRepo);
+		
+		
+		
+		
+		
 		//x.getAllPackages();
+	}
+
+	
+	public TimeLineCollectionRepository getMetricsRepo() {
+		return metricsTimeLineRepo;
 	}
 	
 	
@@ -265,10 +307,76 @@ public class GreetingServiceImpl extends RemoteServiceServlet implements
 		return null;
 	}
 	
-	public Map<String, BaseModel> getLatestEvaluations()
+	public Map<String, Model> getLatestEvaluations()
 			throws Exception
 	{
 		return timeLineRepo.getLatestEvaluations();
 	}
+
 	
+
+
+	public Map<String,Model> getLatestMetricsEvaluations()
+			throws Exception {
+		return metricsTimeLineRepo.getLatestEvaluations();
+	}
+	
+	
+	
+	
+	
+	public static void main(String[] args) throws Exception {
+		System.out.println("Start");
+		
+		final String metricsSnapshotRepoPath = MyApplicationContext.get().getMetricsSnapshotRepoPath();
+		final String metricsPackageRepoPath = MyApplicationContext.get().getMetricsPackageRepoPath();
+
+		
+		Factory<File, PackageRepository> metricsFactory = new Factory<File, PackageRepository>() {
+			public PackageRepository create(File file) {
+
+				// TODO URGENT The date should be read from some metadata file
+				GregorianCalendar lastModificationDate = new GregorianCalendar();
+				lastModificationDate.setTime(new Date(file.lastModified()));
+
+				return new PackageRepository(file.getAbsolutePath() + metricsPackageRepoPath, lastModificationDate);
+			}
+		};
+
+		
+		RSnapshotRepository<PackageRepository> metricsRepo = new RSnapshotRepository<PackageRepository>(new File(metricsSnapshotRepoPath), metricsFactory);
+		
+		TimeLineCollectionRepository metricsTimeLineRepo = new TimeLineCollectionRepository(metricsRepo);
+		
+		
+		System.out.println("----------------------------------");
+		
+		Map<String, Model> evals = metricsTimeLineRepo.getLatestEvaluations();
+		
+		for(Entry<String, Model> entry : evals.entrySet()) {
+			//System.out.println("Val: " + entry.getValue().get("metricsReport"));
+			
+			Model model = entry.getValue();
+			
+			System.out.println(model.get("name"));
+			System.out.println(model.get("date"));
+			
+			String str = model.get("metricsReport");
+			
+			/*
+			JSONObject x = new JSONObject();
+			x.
+			*/
+			System.out.println(str);
+			//Map<String, Object> map = JsonConverter.decode(str);
+			
+			//System.out.println(map);
+		}
+		
+		
+	}
+	
+	//public 
+
 }
+

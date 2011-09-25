@@ -22,6 +22,7 @@ import java.util.Set;
 
 import org.aksw.commons.collections.Descender;
 import org.aksw.commons.collections.DescenderIterator;
+import org.aksw.commons.util.Files;
 import org.aksw.linkedqa.shared.Package;
 import org.aksw.linkedqa.shared.ParserUtils;
 import org.ini4j.Ini;
@@ -264,6 +265,52 @@ public class PackageRepository {
 		
 		return out;
 	}
+
+	
+	public static void mergeModel(BaseModel target, BaseModel source)
+	{
+		if(source != null) {
+			target.setProperties(source.getProperties());
+		}
+	}
+	
+	public BaseModel getData(String packageId)
+			throws InvalidFileFormatException, IOException
+	{
+		BaseModel result = new BaseModel();
+
+		mergeModel(result, getPositiveEvaluation(packageId));
+		mergeModel(result, getMetricsReport(packageId));
+
+		if(result.getProperties().isEmpty()) {
+			return null;
+		}
+		
+		return result;
+	}
+	
+	
+	public BaseModel getMetricsReport(String packageId)
+			throws IOException {
+
+		BaseModel result = new BaseModel();
+		
+		File file = new File(repoRoot + "/" + packageId + "/report.json" );
+
+		if(!file.exists()) {
+			return null;
+		}
+		
+		String str = Files.readContent(file);
+		
+		result.set("metricsReport", str);
+		//String packageId = removePrefix(repoRoot, file.getAbsolutePath());
+		result.set("name", packageId);
+		result.set("date", new Date(file.lastModified()));
+		
+		return result;
+	}
+	
 	
 	public BaseModel getPositiveEvaluation(String packageId)
 			throws InvalidFileFormatException, IOException
