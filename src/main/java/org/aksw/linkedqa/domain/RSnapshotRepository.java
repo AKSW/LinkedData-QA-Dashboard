@@ -85,8 +85,23 @@ public class RSnapshotRepository<T> {
 	
 	private Map<String, NavigableMap<Integer, T>> availableRepos = new TreeMap<String, NavigableMap<Integer, T>>();
 	
-	public RSnapshotRepository(File snapshotRoot, Factory<File, T> factory)
+	
+	public File getSnapshotRoot() {
+		return snapshotRoot;
+	}
+	
+	public String getRepoPath() {
+		return repoPath;
+	}
+	
+	public File getFile(String period, int index, String packageId) {
+		return new File(snapshotRoot.getAbsoluteFile() + "/" + period + "." + index + "/" + repoPath + "/" + packageId);
+	}
+	
+	
+	public RSnapshotRepository(File snapshotRoot, Factory<File, T> factory, String repoPath)
 	{
+		this.repoPath = repoPath;
 		logger.info("Snapshot root is: " + snapshotRoot.getAbsolutePath());
 		this.snapshotRoot = snapshotRoot;
 		this.factory = factory;
@@ -114,7 +129,7 @@ public class RSnapshotRepository<T> {
 			}
 		};
 		
-		RSnapshotRepository<PackageRepository> repo = new RSnapshotRepository<PackageRepository>(new File("/home/raven/data/linkspec-repo"), factory);
+		RSnapshotRepository<PackageRepository> repo = new RSnapshotRepository<PackageRepository>(new File("/home/raven/data/linkspec-repo"), factory, "test---test");
 		
 		TimeLineCollectionRepository x = new TimeLineCollectionRepository(repo);
 		//x.getAllPackages();

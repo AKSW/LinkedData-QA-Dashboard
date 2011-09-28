@@ -99,11 +99,19 @@ public class TaskDao {
 	public List<MyChart> getMyCharts(String packageId) throws IOException {
 		String path = repoRoot + "" + packageId;
 		logger.info("Loading charts from location: " + path);
-		
-		List<MyChart> result = new ArrayList<MyChart>();
-
 				
 		File folder = new File(path);
+		
+		return getMyCharts(folder);
+	}
+	
+	
+	public static List<MyChart> getMyCharts(File folder)
+		throws IOException
+	{
+		List<MyChart> result = new ArrayList<MyChart>();
+
+		
 		for(File file : folder.listFiles()) {
 			FileName name = FileName.create(file.getAbsolutePath());
 			

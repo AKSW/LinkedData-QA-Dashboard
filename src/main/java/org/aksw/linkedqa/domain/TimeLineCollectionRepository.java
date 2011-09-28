@@ -30,6 +30,10 @@ public class TimeLineCollectionRepository {
 	}
 	
 	
+	public RSnapshotRepository<PackageRepository> getBackend() {
+		return backend;
+	}
+	
 	public TimeLineCollectionRepository(RSnapshotRepository<PackageRepository> backend) throws InvalidFileFormatException, IOException {
 		this.backend = backend;
 		

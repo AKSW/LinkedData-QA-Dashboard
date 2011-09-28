@@ -19,7 +19,6 @@ import org.aksw.linkedqa.shared.FieldVerifier;
 import org.aksw.linkedqa.shared.MyChart;
 import org.aksw.linkedqa.shared.TaskDescription;
 import org.aksw.linkedqa.shared.TimeLinePackage;
-import org.apache.commons.lang.exception.ExceptionUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -42,7 +41,7 @@ public class GreetingServiceImpl extends RemoteServiceServlet implements
 
 	private static final Logger logger = LoggerFactory.getLogger(GreetingServiceImpl.class);
 	
-	private TaskDao taskDao;
+	//private TaskDao taskDao;
 	
 	
 	private TimeLineCollectionRepository timeLineRepo;
@@ -55,7 +54,7 @@ public class GreetingServiceImpl extends RemoteServiceServlet implements
 	public GreetingServiceImpl()
 		throws Exception
 	{
-		this.taskDao = new TaskDao();
+		//this.taskDao = new TaskDao();
 		
 		
 		/*
@@ -101,7 +100,7 @@ public class GreetingServiceImpl extends RemoteServiceServlet implements
 			}
 		};
 		
-		RSnapshotRepository<PackageRepository> repo = new RSnapshotRepository<PackageRepository>(new File(snapshotRepoPath), factory);
+		RSnapshotRepository<PackageRepository> repo = new RSnapshotRepository<PackageRepository>(new File(snapshotRepoPath), factory, packageRepoPath);
 		
 		timeLineRepo = new TimeLineCollectionRepository(repo);
 		
@@ -130,10 +129,9 @@ public class GreetingServiceImpl extends RemoteServiceServlet implements
 		};
 
 		
-		RSnapshotRepository<PackageRepository> metricsRepo = new RSnapshotRepository<PackageRepository>(new File(metricsSnapshotRepoPath), metricsFactory);
+		RSnapshotRepository<PackageRepository> metricsRepo = new RSnapshotRepository<PackageRepository>(new File(metricsSnapshotRepoPath), metricsFactory, metricsPackageRepoPath);
 		
 		metricsTimeLineRepo = new TimeLineCollectionRepository(metricsRepo);
-		
 		
 		
 		
@@ -197,9 +195,11 @@ public class GreetingServiceImpl extends RemoteServiceServlet implements
 
 
 	public List<TaskDescription> getTaskDescriptions() {
-		List<TaskDescription> result = taskDao.getAllTasks();
-		return result;
+		return new ArrayList<TaskDescription>();
+		//List<TaskDescription> result = taskDao.getAllTasks();
+		//return result;
 	}
+
 
 
 	public String test() {
@@ -252,15 +252,23 @@ public class GreetingServiceImpl extends RemoteServiceServlet implements
 	// TODO Maybe replace with some more general class
 	public List<MyChart> getCharts2(String packageId) {
 		try {
-			return taskDao.getMyCharts(packageId);
+			File file = metricsTimeLineRepo.getBackend().getFile("hourly", 0, packageId);
+			
+			return TaskDao.getMyCharts(file);
 		} catch (IOException e) {
 			throw new RuntimeException(e);
 		}
 	}
 
+
 	public List<ChartModel> getCharts(String packageId) {
+		if(true) {
+			new ArrayList<ChartModel>();
+		}
+		
+		/*
 		try {
-			List<ChartModel> result = taskDao.getCharts(packageId);
+			//List<ChartModel> result = taskDao.getCharts(packageId);
 			
 			logger.info("Got " + result.size() + " charts");
 			
@@ -272,9 +280,11 @@ public class GreetingServiceImpl extends RemoteServiceServlet implements
 			//throw new RuntimeException(e);
 			//throw new MyException(str);
 		}
+		*/
 		
 		return new ArrayList<ChartModel>();
 	}
+	
 
 	@Override
 	protected void doUnexpectedFailure(Throwable e)
@@ -344,10 +354,16 @@ public class GreetingServiceImpl extends RemoteServiceServlet implements
 		};
 
 		
-		RSnapshotRepository<PackageRepository> metricsRepo = new RSnapshotRepository<PackageRepository>(new File(metricsSnapshotRepoPath), metricsFactory);
+		RSnapshotRepository<PackageRepository> metricsRepo = new RSnapshotRepository<PackageRepository>(new File(metricsSnapshotRepoPath), metricsFactory, metricsPackageRepoPath);
 		
 		TimeLineCollectionRepository metricsTimeLineRepo = new TimeLineCollectionRepository(metricsRepo);
 		
+		File file = metricsTimeLineRepo.getBackend().getFile("hourly", 0, "sampled/onlyout/dbpedia-linkedgeodata-university");
+		System.out.println(file.getAbsolutePath());
+		
+		if(true) {
+			return;
+		}
 		
 		System.out.println("----------------------------------");
 		
@@ -375,6 +391,8 @@ public class GreetingServiceImpl extends RemoteServiceServlet implements
 		
 		
 	}
+
+
 	
 	//public 
 
