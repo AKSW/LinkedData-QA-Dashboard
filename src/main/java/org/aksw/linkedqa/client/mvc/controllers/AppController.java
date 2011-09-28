@@ -923,7 +923,7 @@ public class AppController
 					entry.getValue().set("name", entry.getKey());
 					
 					Model model = entry.getValue();
-					double value = model.get("precision");
+					Double value = model.get("precision");
 					model.set("precision_group", grouper.transform(value));
 
 					value = model.get("recall");
