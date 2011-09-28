@@ -6,6 +6,6 @@ repoRoot="/home/raven/Projects/Current/IntelliJ/24-7-platform/"
 #$repoRoot/link-specifications/update-evaluate-positive.sh
 #$repoRoot/link-specifications/update-evaluate-negative.sh
 
-rsnapshot -c rsnapshot.conf hourly
+rsnapshot -c linkspec.rsnapshot.conf hourly
 
 

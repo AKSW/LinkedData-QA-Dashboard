@@ -320,6 +320,11 @@ public class PackageRepository {
 		Map<String, NumberParser> propertyToParser = new HashMap<String, NumberParser>();
 		propertyToParser.put("precision", new DoubleParser());
 		propertyToParser.put("recall", new DoubleParser());
+
+		propertyToParser.put("estimatedPrecisionLowerBound", new DoubleParser());
+		propertyToParser.put("estimatedPrecisionUpperBound", new DoubleParser());
+
+		
 		propertyToParser.put("duplicates", new LongParser());
 		propertyToParser.put("linksetSize", new LongParser());
 		propertyToParser.put("startDate", new DateFormatParser(DateFormatParser.DefaultUnixDateFormat));

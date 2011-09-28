@@ -103,10 +103,10 @@ public class GreetingServiceImpl extends RemoteServiceServlet implements
 		
 		RSnapshotRepository<PackageRepository> repo = new RSnapshotRepository<PackageRepository>(new File(snapshotRepoPath), factory);
 		
-		//timeLineRepo = new TimeLineCollectionRepository(repo);
+		timeLineRepo = new TimeLineCollectionRepository(repo);
 		
 		
-		timeLineRepo = new TimeLineCollectionRepository();
+		//timeLineRepo = new TimeLineCollectionRepository();
 
 
 		

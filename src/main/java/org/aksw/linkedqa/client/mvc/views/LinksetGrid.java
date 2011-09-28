@@ -171,7 +171,7 @@ public class LinksetGrid extends ContentPanel {
 		ColumnConfig column = new ColumnConfig();
 		column.setId("name");
 		column.setHeader("Linkset Name");
-		column.setWidth(200);
+		column.setWidth(250);
 		column.setRowHeader(false);
 		column.setRenderer(packageNameRenderer);
 		configs.add(column);
@@ -179,25 +179,45 @@ public class LinksetGrid extends ContentPanel {
 		column = new ColumnConfig();
 		column.setId("precision");
 		column.setRenderer(percentCellRenderer);
-		column.setHeader("Precision");
+		column.setHeader("PessPrec");
 		column.setAlignment(HorizontalAlignment.RIGHT);
-		column.setWidth(75);
+		column.setWidth(70);
 		column.setRenderer(percentCellRenderer);
 		configs.add(column);
 
 		column = new ColumnConfig();
 		column.setId("recall");
-		column.setHeader("Recall");
+		column.setHeader("PessRec");
 		column.setAlignment(HorizontalAlignment.RIGHT);
-		column.setWidth(50);
+		column.setWidth(70);
 		column.setRenderer(percentCellRenderer);
 		configs.add(column);
+
+		
+		column = new ColumnConfig();
+		column.setId("estimatedPrecisionLowerBound");
+		column.setRenderer(percentCellRenderer);
+		column.setHeader("EstPrec low");
+		column.setAlignment(HorizontalAlignment.RIGHT);
+		column.setWidth(70);
+		column.setRenderer(percentCellRenderer);
+		configs.add(column);
+
+		column = new ColumnConfig();
+		column.setId("estimatedPrecisionUpperBound");
+		column.setHeader("EstPrec high");
+		column.setAlignment(HorizontalAlignment.RIGHT);
+		column.setWidth(90);
+		column.setRenderer(percentCellRenderer);
+		configs.add(column);
+
+		
 		
 		column = new ColumnConfig();
 		column.setId("linksetDuplicateSize");
 		column.setHeader("Duplicates");
 		column.setAlignment(HorizontalAlignment.RIGHT);
-		column.setWidth(50);
+		column.setWidth(90);
 		column.setRenderer(integerCellRenderer);
 		configs.add(column);
 
@@ -205,7 +225,7 @@ public class LinksetGrid extends ContentPanel {
 		column.setId("linksetErrorCount");
 		column.setHeader("Syntax Errors");
 		column.setAlignment(HorizontalAlignment.RIGHT);
-		column.setWidth(50);
+		column.setWidth(90);
 		column.setRenderer(integerCellRenderer);
 		configs.add(column);
 
@@ -213,7 +233,7 @@ public class LinksetGrid extends ContentPanel {
 		column.setId("linksetSize");
 		column.setHeader("Triples");
 		column.setAlignment(HorizontalAlignment.RIGHT);
-		column.setWidth(50);
+		column.setWidth(90);
 		column.setRenderer(integerCellRenderer);
 		configs.add(column);
 

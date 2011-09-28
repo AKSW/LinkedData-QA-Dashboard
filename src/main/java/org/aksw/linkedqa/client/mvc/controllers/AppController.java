@@ -1,10 +1,15 @@
 package org.aksw.linkedqa.client.mvc.controllers;
 
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Date;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
+import java.util.Set;
+import java.util.TreeMap;
+import java.util.TreeSet;
 
 import org.aksw.linkedqa.client.ChartWidget;
 import org.aksw.linkedqa.client.Constants;
@@ -51,6 +56,9 @@ import com.extjs.gxt.ui.client.widget.Slider;
 import com.extjs.gxt.ui.client.widget.TabItem;
 import com.extjs.gxt.ui.client.widget.TabPanel;
 import com.extjs.gxt.ui.client.widget.Viewport;
+import com.extjs.gxt.ui.client.widget.grid.ColumnConfig;
+import com.extjs.gxt.ui.client.widget.grid.ColumnModel;
+import com.extjs.gxt.ui.client.widget.grid.Grid;
 import com.extjs.gxt.ui.client.widget.grid.GridView;
 import com.extjs.gxt.ui.client.widget.grid.GroupingView;
 import com.extjs.gxt.ui.client.widget.layout.ColumnLayout;
@@ -62,6 +70,7 @@ import com.google.gwt.dom.client.NodeList;
 import com.google.gwt.event.dom.client.ChangeEvent;
 import com.google.gwt.event.dom.client.ChangeHandler;
 import com.google.gwt.i18n.client.DateTimeFormat;
+import com.google.gwt.i18n.client.NumberFormat;
 import com.google.gwt.json.client.JSONObject;
 import com.google.gwt.json.client.JSONParser;
 import com.google.gwt.json.client.JSONValue;
@@ -75,6 +84,130 @@ interface Transformer<I, O> {
 }
 
 // TODO We need some class that tells us how to use (load & display) the measures
+
+
+class Range<T>
+{
+	private T min;
+	private T max;
+	
+	public Range(T min, T max) {
+		this.min = min;
+		this.max = max;
+	}
+	
+	public T getMin() {
+		return min;
+	}
+	public T getMax() {
+		return max;
+	}
+}
+
+class PropertyDefinition
+	implements Comparable<PropertyDefinition>
+{
+	private String id;
+	private String displayName;
+	
+	private NumberFormat format;
+	
+	// If null: do auto adjust.
+	private Number min; 
+	private Number max;
+
+	
+	final NumberFormat doubleFormat = NumberFormat.getFormat("0.00");
+	//final NumberFormat integerFormat = NumberFormat.getPercentFormat();
+	
+	
+	public PropertyDefinition(String id, String displayName, Number min, Number max, NumberFormat format) 
+	{
+		this.id = id;
+		this.displayName = displayName;
+		this.min = min;
+		this.max = max;
+		this.format = format;
+	}
+	
+	public String getId() {
+		return id;
+	}
+
+	public void setId(String id) {
+		this.id = id;
+	}
+
+	public String getDisplayName() {
+		return displayName;
+	}
+
+	public void setDisplayName(String displayName) {
+		this.displayName = displayName;
+	}
+
+	public Number getMin() {
+		return min;
+	}
+
+	public void setMin(Number min) {
+		this.min = min;
+	}
+
+	public Number getMax() {
+		return max;
+	}
+	
+	public void setMax(Number max) {
+		this.max = max;
+	}
+	
+	public NumberFormat getFormat() {
+		return format;
+	}
+	
+	//private static Map<String, PropertyDefinition> defaultMap = null;
+	
+	private static List<PropertyDefinition> defaultMap = null;
+	/*
+	// Sort by display name (rather than id)
+	public static TreeMap<String, PropertyDefinition> getSortedDefaultMap()
+	{
+		
+	}*/
+	
+	//public static Map<String, PropertyDefinition> getDefaultMap()
+	
+	public static List<PropertyDefinition> getDefaultMap()
+	{
+		if(defaultMap == null) {
+			//defaultMap = new TreeMap<String, PropertyDefinition>();
+			defaultMap = new ArrayList<PropertyDefinition>();
+		
+			putDefault(new PropertyDefinition("precision", "Pessimistic Positive Precision", 0.0, 1.0, NumberFormat.getPercentFormat()));
+			putDefault(new PropertyDefinition("recall", "Pessimistic Positive Recall", 0.0, 1.0, NumberFormat.getPercentFormat()));
+			
+			putDefault(new PropertyDefinition("estimatedPrecisionLowerBound", "Estimated Precision Lower Bound", 0.0, 1.0, NumberFormat.getPercentFormat()));
+			putDefault(new PropertyDefinition("estimatedPrecisionUpperBound", "Estimated Precision Upper Bound", 0.0, 1.0, NumberFormat.getPercentFormat()));
+			
+			putDefault(new PropertyDefinition("linksetSize", "Triples", 0.0, null, NumberFormat.getFormat("0")));
+			putDefault(new PropertyDefinition("linksetDuplicateSize", "Linkset Duplicates", 0.0, null, NumberFormat.getFormat("0")));
+			putDefault(new PropertyDefinition("linksetErrorCount", "Linkset Errors", 0, null, NumberFormat.getFormat("0")));
+		}
+		
+		return defaultMap;
+	}
+	
+	private static void putDefault(PropertyDefinition def) {
+		//defaultMap.put(def.getId(), def);
+		defaultMap.add(def);
+	}
+
+	public int compareTo(PropertyDefinition other) {
+		return this.displayName.compareTo(other.displayName);
+	}
+}
+
 
 
 public class AppController
@@ -94,6 +227,14 @@ public class AppController
 	private Label noChartLabel;
 	
 	private LayoutContainer timeLineChartContainer;
+	
+	private LayoutContainer summaryPanel;
+	
+	
+	private LayoutContainer outliersPanel;
+	
+	//private Grid<Model> summaryGrid;
+	
 	//private Button linksetGrid;
 	//private Chart ove
 
@@ -159,18 +300,65 @@ public class AppController
 		};
 	}
 	
-	ListStore<Model> deriveHistogram(ListStore<? extends Model> store, String attribute, int n) {
-		int counts[] = new int[n];
-		Arrays.fill(counts, 0);
+	
+	Range<Number> extractRange(ListStore<? extends Model> store, String attribute)
+	{
+		Double min = null;
+		Double max = null;
 
-		
 		for(ModelData raw : store.getModels()) {
-			Double prec = tryParseDouble(raw.get(attribute));
-			if(prec == null) {
+			Double value = tryParseDouble(raw.get(attribute));
+			if(value == null) {
 				continue;
 			}
 			
-			int x = getValueClass(prec, 1, n);
+			if(min == null) {
+				min = value;
+				max = value;
+			}
+			
+			if(value.compareTo(min) < 0) {
+				min = value;
+			}
+			
+			if(value.compareTo(max) > 0) {
+				max = value;
+			}
+		}
+		
+		return min == null ? null : new Range<Number>(min, max);
+	}
+	
+	
+	ListStore<Model> deriveHistogram(ListStore<? extends Model> store, String attribute, PropertyDefinition property, int n) {
+		int counts[] = new int[n];
+		Arrays.fill(counts, 0);
+
+		double min;
+		double max;
+
+		Range<Number> range = null;
+		if(property.getMax() == null || property.getMin() == null) {
+			range = extractRange(store, attribute);
+			
+			if(range == null) {
+				return new ListStore<Model>();
+			}
+		}
+		
+		min = property.getMin() != null ? property.getMin().doubleValue() : range.getMin().doubleValue();
+		max = property.getMax() != null ? property.getMax().doubleValue() : range.getMax().doubleValue();
+		
+		double delta = max - min; 
+		double scale = delta / (double)n;
+		
+		for(ModelData raw : store.getModels()) {
+			Double value = tryParseDouble(raw.get(attribute));
+			if(value == null) {
+				continue;
+			}
+						
+			int x = getValueClass(value, scale, n);
 		
 			//GWT.log("xxx = " + prec + "    " + x);
 			counts[x]++;
@@ -178,7 +366,9 @@ public class AppController
 
 		ListStore<Model> result = new ListStore<Model>();
 		for(int i = 0; i < counts.length; ++i) {
-			String label = i * counts.length + "%";
+			double v = i * scale;
+			
+			String label = property.getFormat().format(v);
 			
 			Model data = new BaseModel();
 			data.set("label", label);
@@ -248,13 +438,17 @@ public class AppController
 	
 	
 	public void resetOverviewChart(int measureIndex) {
-		String measureName = this.measureNames[measureIndex];
+		//String measureName = this.measureNames[measureIndex];
+		PropertyDefinition property = PropertyDefinition.getDefaultMap().get(measureIndex);
+		
+		String measureName = property.getId();
+		
 		
 		ListStore<Model> store = Registry.get(Constants.EVALUATION_STORE);
 
 		
 		int n = 10;
-		ListStore<Model> histogram = deriveHistogram(store, measureName, n);
+		ListStore<Model> histogram = deriveHistogram(store, measureName, property, n);
 		//ListStore<Model> h = deriveHistogram(store, "recall", n);
 		
 		/*
@@ -281,7 +475,7 @@ public class AppController
 		String snapshotTitle = "latest snapshot";
 		//snapshot at 19-3-2011
 		
-		String title = measureName + " distribution for " + snapshotTitle;
+		String title = property.getDisplayName() + " distribution for " + snapshotTitle;
 		
 		ChartModel model = new ChartModel(title,  
 		        "font-size: 14px; font-family: Verdana; text-align: center;");  
@@ -406,7 +600,7 @@ public class AppController
 		overviewTab.setLayout(new FitLayout());
 		overviewTab.setLayoutOnChange(true);
 		overviewTab.setClosable(false);
-		overviewTab.setText("Overview");
+		overviewTab.setText("Linkset Status");
 		//overviewTab.setAutoHeight(true);
 		//overviewTab.setAutoWidth(true);
 		//overviewTab.setSize(500, 500);
@@ -442,11 +636,11 @@ public class AppController
 		*/
 
 		final ListBox lb = new ListBox();
-		lb.addItem("Precision");
-		lb.addItem("Recall");
-		lb.addItem("Duplicates");
-		lb.addItem("Link set errors");
 		
+		for(PropertyDefinition item : PropertyDefinition.getDefaultMap()) {
+			lb.addItem(item.getDisplayName());
+		}
+				
 		lb.addChangeHandler(new ChangeHandler() {
 			public void onChange(ChangeEvent event) {
 				
@@ -498,7 +692,7 @@ public class AppController
 		
 		chartContainer.add(overviewChartView);
 		tmpContainer.add(chartContainer);
-		linksetGrid.setSize(550,300);
+		linksetGrid.setSize(900,300);
 		//linksetGrid.setAutoHeight(true);
 		tmpContainer.add(linksetGrid);
 		
@@ -510,7 +704,7 @@ public class AppController
 		timeLineChartContainer.setLayoutOnChange(true);
 		//timeLineChart.setChartModel(new ChartModel("oaeuaeoueo"));
 		//timeLineChart.setChartModel(model)
-		timeLineChartContainer.setSize(850, 300);
+		timeLineChartContainer.setSize(1200, 300);
 		
 		timeLineChartContainer.setBorders(true);
 		//timeLineChartContainer.set
@@ -555,8 +749,22 @@ public class AppController
 		metricsPanel.setLayoutOnChange(true);
 
 
+		summaryPanel = new LayoutContainer(new FitLayout());
+		summaryPanel.setSize(300, 300);
+		summaryPanel.setLayoutOnChange(true);
+		
+		
+		outliersPanel = new LayoutContainer(new ColumnLayout());
+		outliersPanel.setSize(800, 300);
+		outliersPanel.setLayoutOnChange(true);
+		
 		metricsPanel.add(taskView.getTaskGrid());
+		metricsPanel.add(summaryPanel);
+		
+		chartView.getWidget().setSize(1500, 500);
+		
 		metricsPanel.add(chartView.getWidget());
+		metricsPanel.add(outliersPanel);
 		
 		//item.add(new Label("Test Content"));
 
@@ -630,7 +838,8 @@ public class AppController
 					model.set("sampled", map.get("sampled").isBoolean());
 					model.set("sampleSize", map.get("sampleSize").isNumber());
 					model.set("direction", map.get("direction").isNumber());
-					
+
+					model.set("metricsReport", map);
 					
 					//String o = entry.getValue().get("metricsReport");
 					taskStore.add(model);
@@ -701,9 +910,12 @@ public class AppController
 			public void onSuccess(Map<String, Model> result) {
 			
 				//ListStore<Model> evalStore = Registry.get(Constants.EVALUATION_STORE);
-				GroupingStore<Model> evalStore = Registry.get(Constants.EVALUATION_STORE);
+				//GroupingStore<Model> evalStore = Registry.get(Constants.EVALUATION_STORE);
 				
+				GroupingStore<Model> evalStore = new GroupingStore<Model>();
 				evalStore.groupBy("precision_group");
+				
+				
 				
 				Transformer<Number, Integer> grouper = createGrouper(10, 1.0);
 				
@@ -728,6 +940,12 @@ public class AppController
 					evalStore.add(entry.getValue());
 				}
 			
+				
+				GroupingStore<Model> store = Registry.get(Constants.EVALUATION_STORE);
+				store.removeAll();
+				store.add(evalStore.getModels());
+				
+				
 				resetOverviewChart(activeMeasureIndex);
 				
 				//MessageBox.info("yay", "eee", null);
@@ -823,16 +1041,211 @@ public class AppController
 	}
 
 	
+	
+	public Grid<Model> createSummaryGrid(ListStore<Model> store) {
+		List<ColumnConfig> configs = new ArrayList<ColumnConfig>();
+
+		ColumnConfig column = new ColumnConfig();
+		column.setId("metricName");
+		column.setHeader("Metric Name");
+		column.setWidth(150);
+		column.setRowHeader(true);
+		configs.add(column);
+
+		column = new ColumnConfig();
+		column.setId("status");
+		column.setHeader("Status");
+		column.setWidth(150);
+		column.setRowHeader(true);
+		configs.add(column);
+		
+		column = new ColumnConfig();
+		column.setId("distanceChange");
+		column.setHeader("Distance Change");
+		column.setWidth(150);
+		column.setRowHeader(true);
+		configs.add(column);
+		
+		ColumnModel cm = new ColumnModel(configs);
+
+		
+		Grid<Model> grid = new Grid<Model>(store, cm);
+		grid.setStyleAttribute("borderTop", "none");
+		//grid.setAutoExpandColumn("name");
+		grid.setBorders(false);
+		grid.setStripeRows(true);
+		grid.setColumnLines(true);
+		grid.setColumnReordering(true);
+		//grid.getAriaSupport().setLabelledBy(cp.getHeader().getId() + "-label");
+
+		return grid;
+	}
+	
+	
+	public Map<String, Double> extractDoubleMap(JSONObject json) {
+		Map<String, Double> result = new HashMap<String, Double>();
+		
+		for(String key : json.keySet()) {
+			JSONValue value = json.get(key);
+			if(value.isNumber() != null) {
+				result.put(key, value.isNumber().doubleValue());
+			}
+		}
+		
+		return result;
+	}
+	
+	public static <V, K> Map<V, Set<K>> invert(Map<K, V> map) {
+		Map<V, Set<K>> result = new TreeMap<V, Set<K>>();
+		
+		for(Entry<K, V> entry : map.entrySet()) {
+			
+			Set<K> set = result.get(entry.getValue());
+			if(set == null) {
+				set = new TreeSet<K>();
+				result.put(entry.getValue(), set);
+			}
+			
+			set.add(entry.getKey());
+		}
+
+		return result;
+	}
+	
+	
+	
+	public void updateOutliersSummary(JSONObject json) {
+		Map<String, ListStore<Model>> metricToOutliers = new HashMap<String, ListStore<Model>>();
+		
+		for(String metricName : json.keySet()) {
+			JSONObject value = json.get(metricName).isObject();
+			
+			ListStore<Model> store = new ListStore<Model>();
+			
+			if(value != null) {
+				Map<String, Double> map = extractDoubleMap(value);
+				
+				Map<Double, Set<String>> inverted = invert(map);
+				
+				int rank = 0;
+				for(Entry<Double, Set<String>> entry : inverted.entrySet()) {
+					++rank;
+					
+					Model model = new BaseModel();
+					
+					for(String resource : entry.getValue()) {
+						model.set("rank", rank);
+						model.set("distanceChange", entry.getKey());
+						model.set("resource", resource);
+					}
+					
+					store.add(model);
+				}
+			}
+			
+			if(!store.getModels().isEmpty()) {
+				metricToOutliers.put(metricName, store);
+			}
+			
+		}
+
+		chartView.getWidget().setOutliers(metricToOutliers);
+		
+		/*
+		//outliersPanel.removeAll();
+
+		for(Entry<String, ListStore<Model>> entry : metricToOutliers.entrySet()) {
+			
+			
+			//Grid<Model> grid = createOutliersGrid(entry.getValue());			
+			//outliersPanel.add(grid);
+		}*/
+		
+	}
+	
+	
+	public void updateMetricsSummary(JSONObject json) {
+		// Create a model from the json
+		ListStore<Model> store = new ListStore<Model>();
+		
+
+		for(String key : json.keySet()) {
+			Model model = new BaseModel();
+
+			JSONObject value = json.get(key).isObject();
+			model.set("metricName", key);
+
+			//MessageBox.info("title", value.keySet().toString(), null);
+			
+			String status = value.get("status").isString().stringValue();
+			Double distanceChange = value.get("change").isNumber().doubleValue();
+
+			model.set("status", status);
+			model.set("distanceChange", distanceChange);
+			/*
+			for(String k : value.keySet()) {
+				JSONObject v = value.get(k).isObject();
+				
+				if(v.isObject() != null) {
+					// Nothing to do
+				} else if(v.isNumber() != null) {
+					model.set("distanceChange", value.isNumber().doubleValue());				
+				} else if(v.isString() != null) {
+					model.set("status", value.isString().stringValue());
+				}
+			}
+			*/
+			
+			if(!model.getProperties().isEmpty()) {
+				store.add(model);
+			}
+		}
+
+		
+		Grid<Model> grid = createSummaryGrid(store); 
+		
+		summaryPanel.removeAll();
+		summaryPanel.add(grid);
+	}
+	
+	
+	
 	public void onTaskSelectionChanged(AppEvent event) {
 		Model model = event.getData();
 		String packageId = model.get("name");
 		
-
+		final JSONObject metricsReport = model.get("metricsReport");
+		
 
 		service.getCharts2(packageId, new AsyncCallback<List<MyChart>>() {			
 			public void onSuccess(List<MyChart> result) {
 				
+				
+				Set<String> keys = new TreeSet<String>();
+				for(MyChart model : result) {
+					String name = model.get("type");
+					keys.add(name);
+				}
+				
+				
+				chartView.getWidget().resetSlots(new ArrayList<String>(keys));
+				;
 				chartView.getWidget().setModels(result);
+
+				
+				if(metricsReport != null) {
+					
+					JSONObject summary = metricsReport.get("reportContent").isObject().get("metricStatus").isObject(); 			
+					updateMetricsSummary(summary);
+					
+					
+					JSONObject outliers = metricsReport.get("reportContent").isObject().get("outliers").isObject();
+					updateOutliersSummary(outliers);
+				}
+
+				
+				
+				
 				
 				//Dispatcher.forwardEvent(AppEvents.Error, );
 			}

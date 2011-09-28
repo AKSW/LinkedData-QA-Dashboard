@@ -9,7 +9,10 @@ package org.aksw.linkedqa.client;
  */
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
+import java.util.Map.Entry;
 
 import org.aksw.linkedqa.shared.MyChart;
 
@@ -23,11 +26,16 @@ import com.extjs.gxt.charts.client.model.ScaleProvider;
 import com.extjs.gxt.charts.client.model.charts.BarChart;
 import com.extjs.gxt.charts.client.model.charts.CylinderBarChart;
 import com.extjs.gxt.charts.client.model.charts.PieChart;
+import com.extjs.gxt.ui.client.data.Model;
+import com.extjs.gxt.ui.client.store.ListStore;
 import com.extjs.gxt.ui.client.widget.Info;
 import com.extjs.gxt.ui.client.widget.LayoutContainer;
-import com.extjs.gxt.ui.client.widget.MessageBox;
+import com.extjs.gxt.ui.client.widget.grid.ColumnConfig;
+import com.extjs.gxt.ui.client.widget.grid.ColumnModel;
+import com.extjs.gxt.ui.client.widget.grid.Grid;
 import com.extjs.gxt.ui.client.widget.layout.FitLayout;
 import com.extjs.gxt.ui.client.widget.layout.FlowLayout;
+import com.extjs.gxt.ui.client.widget.layout.TableLayout;
 import com.google.gwt.core.client.GWT;
 import com.google.gwt.user.client.Element;
 import com.google.gwt.user.client.ui.Widget;
@@ -52,14 +60,120 @@ public class ChartWidget extends LayoutContainer {
 	}*/
 	
 	
-	public void setModels(List<MyChart> data) {
-		List<ChartModel> models = new ArrayList<ChartModel>();
-		for(MyChart d : data) {
-			models.add(createModel(d));
+	private List<String> keys = new ArrayList<String>();
+	
+	
+	/**
+	 * Clears the widget, and creates slots for the given keys.
+	 * 
+	 * 
+	 * 
+	 * 
+	 * @param keys
+	 */
+	public void resetSlots(List<String> keys) {
+		this.keys.clear();
+		
+		for(String key : keys) {		
+			this.keys.add(normalizeName(key));
 		}
 		
-		setChartModels(models);
+		this.removeAll();
+		this.setLayout(new TableLayout(keys.size()));
 	}
+	
+	
+	public void setOutliers(Map<String, ListStore<Model>> mapx) {
+
+		Map<String, ListStore<Model>> map = new HashMap<String, ListStore<Model>>();
+		for(Entry<String, ListStore<Model>> entry : mapx.entrySet()) {
+			map.put(normalizeName(entry.getKey()), entry.getValue());
+		}
+
+		GWT.log("Outlier keys:" + map.keySet());
+
+		
+		for(String key : keys) {
+			ListStore<Model> store = map.get(key);
+			
+			if(store == null) {
+				store = new ListStore<Model>();
+			}
+			
+			this.add(createOutliersGrid(store));
+		}
+	}
+	
+	public static String normalizeName(String name) {
+		return name.replace("_", "").replace(" ", "").toLowerCase();
+	}
+
+	
+	public void setModels(List<MyChart> data) {
+
+		Map<String, MyChart> nameToModel = new HashMap<String, MyChart>();
+		for(MyChart item : data) {
+			String name = item.get("type");
+			nameToModel.put(normalizeName(name), item);
+		}
+		GWT.log("Chart keys:" + nameToModel.keySet());
+		
+		
+		for(String key : keys) {
+			MyChart d = nameToModel.get(key);
+		
+			List<ChartModel> models = new ArrayList<ChartModel>();
+			//for(MyChart d : data) {
+			if(d == null) {
+				d = new MyChart();
+			}
+			
+			models.add(createModel(d));
+			setChartModels(models);
+		}
+	}
+	
+	public Grid<Model> createOutliersGrid(ListStore<Model> store) {
+		List<ColumnConfig> configs = new ArrayList<ColumnConfig>();
+
+		ColumnConfig column = new ColumnConfig();
+		column.setId("rank");
+		column.setHeader("Rank");
+		column.setWidth(40);
+		column.setRowHeader(true);
+		configs.add(column);
+
+		column = new ColumnConfig();
+		column.setId("resource");
+		column.setHeader("Resource");
+		column.setWidth(200);
+		column.setRowHeader(true);
+		configs.add(column);
+
+		
+		column = new ColumnConfig();
+		column.setId("distanceChange");
+		column.setHeader("Change");
+		column.setWidth(40);
+		column.setRowHeader(true);
+		configs.add(column);
+				
+		ColumnModel cm = new ColumnModel(configs);
+
+		
+		Grid<Model> grid = new Grid<Model>(store, cm);
+		grid.setStyleAttribute("borderTop", "none");
+		grid.setSize(300, 300);
+		//grid.setAutoExpandColumn("name");
+		grid.setBorders(false);
+		grid.setStripeRows(true);
+		grid.setColumnLines(true);
+		grid.setColumnReordering(true);
+		//grid.getAriaSupport().setLabelledBy(cp.getHeader().getId() + "-label");
+
+		return grid;
+	}
+
 	
 	public ChartModel createModel(MyChart data) {
 		ChartModel model = new ChartModel(data.getType(), "font-size: 14px; font-family: Verdana; text-align: center;");
@@ -136,7 +250,7 @@ public class ChartWidget extends LayoutContainer {
 	
 	
 	public void setChartModels(List<ChartModel> models) {
-		removeAll();
+		//removeAll();
 
 		for(ChartModel model : models) {
 			addChartModel(model);
