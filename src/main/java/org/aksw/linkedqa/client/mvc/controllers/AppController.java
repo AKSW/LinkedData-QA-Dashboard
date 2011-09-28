@@ -272,7 +272,7 @@ public class AppController
 
 	
 	int getValueClass(double value, double scale, int n) {
-		return Math.min(n - 1, (int)(value * scale * n));		
+		return Math.min(n - 1, (int)(value / scale * n));		
 	}
 	
 	
@@ -687,12 +687,12 @@ public class AppController
 
 		LayoutContainer chartContainer = new LayoutContainer();
 		chartContainer.setLayout(new FitLayout());
-		chartContainer.setSize(300, 300);
+		chartContainer.setSize(400, 300);
 		
 		
 		chartContainer.add(overviewChartView);
 		tmpContainer.add(chartContainer);
-		linksetGrid.setSize(900,300);
+		linksetGrid.setSize(900, 300);
 		//linksetGrid.setAutoHeight(true);
 		tmpContainer.add(linksetGrid);
 		
@@ -704,7 +704,7 @@ public class AppController
 		timeLineChartContainer.setLayoutOnChange(true);
 		//timeLineChart.setChartModel(new ChartModel("oaeuaeoueo"));
 		//timeLineChart.setChartModel(model)
-		timeLineChartContainer.setSize(1200, 300);
+		timeLineChartContainer.setSize(1300, 300);
 		
 		timeLineChartContainer.setBorders(true);
 		//timeLineChartContainer.set
