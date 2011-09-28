@@ -1,5 +1,6 @@
 package org.aksw.linkedqa.client;
 
+import java.util.Date;
 import java.util.List;
 import java.util.Map;
 
@@ -36,4 +37,9 @@ public interface GreetingService extends RemoteService {
 	
 	Map<String, Model> getLatestMetricsEvaluations() throws Exception;
 
+	
+	Map<Integer, Date> getLinksetsTimeLineTimeStamps();
+	Map<String, Model> getLinksetEvaluations(int index) throws Exception;
+	List<MyChart> getCharts(int index, String packageId);
 }
+

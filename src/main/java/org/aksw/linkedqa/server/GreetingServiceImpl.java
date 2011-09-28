@@ -4,6 +4,7 @@ import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Date;
+import java.util.GregorianCalendar;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
@@ -30,7 +31,6 @@ import com.extjs.gxt.charts.client.model.charts.CylinderBarChart;
 import com.extjs.gxt.ui.client.data.BaseModel;
 import com.extjs.gxt.ui.client.data.Model;
 import com.google.gwt.user.server.rpc.RemoteServiceServlet;
-import com.ibm.icu.util.GregorianCalendar;
 
 /**
  * The server side implementation of the RPC service.
@@ -332,6 +332,10 @@ public class GreetingServiceImpl extends RemoteServiceServlet implements
 	}
 	
 	
+	public Map<Integer, Date> getLinksetsTimeLineTimeStamps() {
+		return timeLineRepo.getTimeLineTimeStamps();
+	}
+	
 	
 	
 	
@@ -390,6 +394,19 @@ public class GreetingServiceImpl extends RemoteServiceServlet implements
 		}
 		
 		
+	}
+
+
+	public Map<String, Model> getLinksetEvaluations(int index)
+		throws Exception
+	{
+		return timeLineRepo.getEvaluations(index);
+	}
+
+
+	public List<MyChart> getCharts(int index, String packageId) {
+		// TODO Auto-generated method stub
+		return null;
 	}
 
 

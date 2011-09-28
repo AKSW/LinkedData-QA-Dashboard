@@ -2,6 +2,7 @@ package org.aksw.linkedqa.domain;
 
 import java.io.File;
 import java.util.Date;
+import java.util.GregorianCalendar;
 import java.util.List;
 import java.util.Map;
 import java.util.NavigableMap;
@@ -13,7 +14,6 @@ import org.slf4j.LoggerFactory;
 
 import com.extjs.gxt.charts.client.model.ChartModel;
 import com.extjs.gxt.ui.client.data.BaseModel;
-import com.ibm.icu.util.GregorianCalendar;
 
 class ItemId {
 	private String name;
@@ -189,13 +189,28 @@ public class RSnapshotRepository<T> {
 		return availableRepos.get(name);
 	}
 	
+	
+	public T get(int index, String name) {
+		NavigableMap<Integer, T> map = availableRepos.get(name);
+		if(map == null || map.isEmpty()) {
+			return null;
+		}
+		
+		return map.get(index);		
+	}
+	
+	
 	public T getLatest(String name) {
+		return get(availableRepos.get(name).firstKey(), name);
+				
+		/*
 		NavigableMap<Integer, T> map = availableRepos.get(name);
 		if(map == null || map.isEmpty()) {
 			return null;
 		}
 		
 		return map.firstEntry().getValue();
+		*/
 	}
 	
 	/*

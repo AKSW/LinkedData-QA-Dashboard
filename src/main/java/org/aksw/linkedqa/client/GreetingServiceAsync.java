@@ -1,5 +1,6 @@
 package org.aksw.linkedqa.client;
 
+import java.util.Date;
 import java.util.List;
 import java.util.Map;
 
@@ -31,4 +32,9 @@ public interface GreetingServiceAsync {
 	void getLatestMetricsEvaluations(AsyncCallback<Map<String, Model>> callback);
 
 	//void testChart(AsyncCallback<ChartModel> callback);
+	
+	void getLinksetsTimeLineTimeStamps(AsyncCallback<Map<Integer, Date>> callback);
+	void getLinksetEvaluations(int index, AsyncCallback<Map<String, Model>> callback);
+	void getCharts(int index, String packageId, AsyncCallback<List<MyChart>> callback);
+
 }

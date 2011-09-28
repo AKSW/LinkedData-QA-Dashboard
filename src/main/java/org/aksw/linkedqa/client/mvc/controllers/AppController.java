@@ -42,7 +42,6 @@ import com.extjs.gxt.ui.client.data.ModelData;
 import com.extjs.gxt.ui.client.event.Events;
 import com.extjs.gxt.ui.client.event.Listener;
 import com.extjs.gxt.ui.client.event.SelectionChangedEvent;
-import com.extjs.gxt.ui.client.event.SliderEvent;
 import com.extjs.gxt.ui.client.mvc.AppEvent;
 import com.extjs.gxt.ui.client.mvc.Controller;
 import com.extjs.gxt.ui.client.mvc.Dispatcher;
@@ -52,7 +51,6 @@ import com.extjs.gxt.ui.client.widget.ContentPanel;
 import com.extjs.gxt.ui.client.widget.Label;
 import com.extjs.gxt.ui.client.widget.LayoutContainer;
 import com.extjs.gxt.ui.client.widget.MessageBox;
-import com.extjs.gxt.ui.client.widget.Slider;
 import com.extjs.gxt.ui.client.widget.TabItem;
 import com.extjs.gxt.ui.client.widget.TabPanel;
 import com.extjs.gxt.ui.client.widget.Viewport;
@@ -129,6 +127,8 @@ class PropertyDefinition
 		this.max = max;
 		this.format = format;
 	}
+	
+	
 	
 	public String getId() {
 		return id;
@@ -245,6 +245,9 @@ public class AppController
 	private int activeMeasureIndex = 0;
 	
 	private String activePackageName = null;
+	
+	
+	private List<Integer> itemToTimeStampIndex = new ArrayList<Integer>();
 	
 	public AppController() {
 		registerEventTypes(AppEvents.Init);
@@ -579,6 +582,10 @@ public class AppController
 	
 	public void onInit(AppEvent event) {		
 
+		
+		service = (GreetingServiceAsync)Registry.get(Constants.MAIN_SERVICE);
+
+		
 		// Make sure the other widgets initialize
 		forwardToView(taskView, event);
 		forwardToView(chartView, event);
@@ -654,9 +661,46 @@ public class AppController
 		});
 		
 		infoPanel.add(lb);
+
+		
+		
+		
+		final ListBox timestamp = new ListBox();
+		timestamp.addChangeHandler(new ChangeHandler() {
+			public void onChange(ChangeEvent event) {
+				
+				int index = timestamp.getSelectedIndex();
+				if(index >= 0 && index < itemToTimeStampIndex.size()) {
+					resetEvaluationGrid(index);
+				}
+			}
+		});
+		infoPanel.add(timestamp);
+
+		
+		service.getLinksetsTimeLineTimeStamps(new AsyncCallback<Map<Integer, Date>>() {
+
+			public void onSuccess(Map<Integer, Date> result) {
+				itemToTimeStampIndex.clear();
+				
+				for(Entry<Integer, Date> entry : result.entrySet()) {
+					timestamp.addItem(entry.getValue().toString());
+					
+					itemToTimeStampIndex.add(entry.getKey());
+				}
+			}
+
+			public void onFailure(Throwable caught) {
+			}
+
+		});
+
+		
+		
 		
 
 		/* Slider for the snapshot date */
+		/*
 		int margins = 30;
 
 		Slider slider = new Slider();
@@ -674,7 +718,7 @@ public class AppController
 				MessageBox.info("info", "new value is: " + se.getNewValue(), null);
 			}
 	    });
-		
+		*/
 
 		
 		//label.setStyleAttribute("font", "normal 20px courier");
@@ -790,9 +834,8 @@ public class AppController
 		//super.initialize();
 
 		
-		service = (GreetingServiceAsync)Registry.get(Constants.MAIN_SERVICE);
 		
-		resetEvaluationGrid();
+		resetEvaluationGrid(0);
 		
 		/*
 		service.test(new AsyncCallback<String>() {			
@@ -902,11 +945,11 @@ public class AppController
 
 	}
 	
-	public void resetEvaluationGrid() {
+	public void resetEvaluationGrid(int index) {
 
 		//service.get
 		
-		service.getLatestEvaluations(new AsyncCallback<Map<String, Model>>() {			
+		service.getLinksetEvaluations(index, new AsyncCallback<Map<String, Model>>() {			
 			public void onSuccess(Map<String, Model> result) {
 			
 				//ListStore<Model> evalStore = Registry.get(Constants.EVALUATION_STORE);

@@ -1,10 +1,13 @@
 package org.aksw.linkedqa.domain;
 
 import java.io.IOException;
+import java.util.Date;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Map.Entry;
+import java.util.NavigableMap;
 import java.util.NavigableSet;
+import java.util.TreeMap;
 import java.util.TreeSet;
 
 import org.aksw.linkedqa.shared.Package;
@@ -43,6 +46,19 @@ public class TimeLineCollectionRepository {
 	}
 	
 	
+	
+	public NavigableMap<Integer, Date> getTimeLineTimeStamps()
+	{
+		NavigableMap<Integer, Date> result = new TreeMap<Integer, Date>();
+
+		NavigableMap<Integer, PackageRepository> repos = backend.getRepos(intervalType);
+				
+		for(Entry<Integer, PackageRepository> entry : repos.entrySet()) {
+			result.put(entry.getKey(), entry.getValue().getLastModificationDate().getTime());
+		}
+		
+		return result;
+	}
 	
 	/**
 	 * Returns 
@@ -101,6 +117,28 @@ public class TimeLineCollectionRepository {
 		return nameToPackage.get(packageId);
 	}
 
+	
+	public  Map<String, Model> getEvaluations(int index)
+			throws InvalidFileFormatException, IOException
+	{
+		Map<String, Model> result = new HashMap<String, Model>();
+
+		for(Entry<String, TimeLinePackage> entry : nameToPackage.entrySet()) {
+			Model p = entry.getValue().getMap().values().iterator().next();
+			String name = (String)p.get("name");
+			
+			//BaseModel model = backend.getLatest(intervalType).getPositiveEvaluation(name); //);.getName());
+			Model model = backend.get(index, intervalType).getData(name);
+			if(model == null) {
+				continue;
+			}
+			
+			result.put(name, model);
+		}
+		
+		System.out.println(result);
+		return result;
+	}
 	
 	/*
 	public Model getPositiveEvaluation(String packageId) throws InvalidFileFormatException, IOException {
