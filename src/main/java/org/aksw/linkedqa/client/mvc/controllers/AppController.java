@@ -2,6 +2,7 @@ package org.aksw.linkedqa.client.mvc.controllers;
 
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collection;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
@@ -275,9 +276,34 @@ public class AppController
 
 	
 	int getValueClass(double value, double scale, int n) {
-		return Math.min(n - 1, (int)(value / scale * n));		
+		return Math.min(n - 1, (int)(value * scale * n));		
 	}
 	
+	
+	public static Transformer<Number, Integer> createGrouper(final int n, PropertyDefinition property, Range<Number> range) {
+
+		final double min = property.getMin() != null ? property.getMin().doubleValue() : range.getMin().doubleValue();
+		final double max = property.getMax() != null ? property.getMax().doubleValue() : range.getMax().doubleValue();
+		
+		double delta = max - min; 
+		final double scale = (double)n / delta;
+
+		
+		return new Transformer<Number, Integer>() {
+			public Integer transform(Number input) {				
+				//double val = Math.max(_input, _min);
+				//val = Math.min(val, _max);
+				
+				//double scale = (_max - _min) / (double)(n - 1);
+				
+				double value = input.doubleValue();
+				double bounded = Math.min(value, max);
+				bounded = Math.max(bounded, min);
+				
+				return (int)Math.min(((bounded - min) * scale), n - 1);	
+			}
+		};		
+	}
 	
 	/**
 	 * Returns an object that creates keys for grouping.
@@ -304,12 +330,12 @@ public class AppController
 	}
 	
 	
-	Range<Number> extractRange(ListStore<? extends Model> store, String attribute)
+	Range<Number> extractRange(Collection<? extends Model> store, String attribute)
 	{
 		Double min = null;
 		Double max = null;
 
-		for(ModelData raw : store.getModels()) {
+		for(ModelData raw : store) {
 			Double value = tryParseDouble(raw.get(attribute));
 			if(value == null) {
 				continue;
@@ -342,7 +368,7 @@ public class AppController
 
 		Range<Number> range = null;
 		if(property.getMax() == null || property.getMin() == null) {
-			range = extractRange(store, attribute);
+			range = extractRange(store.getModels(), attribute);
 			
 			if(range == null) {
 				return new ListStore<Model>();
@@ -353,7 +379,7 @@ public class AppController
 		max = property.getMax() != null ? property.getMax().doubleValue() : range.getMax().doubleValue();
 		
 		double delta = max - min; 
-		double scale = delta / (double)n;
+		double scale =  (double)n / delta;
 		
 		for(ModelData raw : store.getModels()) {
 			Double value = tryParseDouble(raw.get(attribute));
@@ -446,8 +472,11 @@ public class AppController
 		
 		String measureName = property.getId();
 		
+		GroupingStore<Model> store = Registry.get(Constants.EVALUATION_STORE);
+		store.groupBy(measureName + "_group");
+
 		
-		ListStore<Model> store = Registry.get(Constants.EVALUATION_STORE);
+		//ListStore<Model> store = Registry.get(Constants.EVALUATION_STORE);
 
 		
 		int n = 10;
@@ -543,6 +572,13 @@ public class AppController
 		    }
 		    */
 		    
+		    XAxis xAxis = new XAxis();
+		    XLabels xLabels = xAxis.new XLabels();
+		    xLabels.setRotationAngle(-45);
+		    xAxis.setLabels(xLabels);
+
+		    model.setXAxis(xAxis);
+
 		    
 		    //overviewChartView.getWidget().addChartModel(model); 
 		    overviewChartView.setChartModel(model);
@@ -956,37 +992,60 @@ public class AppController
 				//GroupingStore<Model> evalStore = Registry.get(Constants.EVALUATION_STORE);
 				
 				GroupingStore<Model> evalStore = new GroupingStore<Model>();
-				evalStore.groupBy("precision_group");
+				
+				Map<String, Transformer<Number, Integer>> propertyToGrouper = new HashMap<String, Transformer<Number, Integer>>();
+				for(PropertyDefinition property : PropertyDefinition.getDefaultMap()) {					
+					Transformer<Number, Integer> grouper = createGrouper(10, property, extractRange(result.values(), property.getId()));
+				
+					propertyToGrouper.put(property.getId(), grouper);
+				}
 				
 				
-				
-				Transformer<Number, Integer> grouper = createGrouper(10, 1.0);
+				//Transformer<Number, Integer> grouper = createGrouper(10, 1.0);
 				
 				for(Entry<String, Model> entry : result.entrySet()) {
-					entry.getValue().set("name", entry.getKey());
-					
+					//for(PropertyDefinition property : PropertyDefinition.getDefaultMap()) {
 					Model model = entry.getValue();
-					Double value = model.get("precision");
-					model.set("precision_group", grouper.transform(value));
-
-					value = model.get("recall");
-					model.set("recall_group", grouper.transform(value));
-
+					model.set("name", entry.getKey());
 					
-					Double precision = tryParseDouble(entry.getValue().get("precision"));
-					if(precision == null) {
-						continue;
+					for(Entry<String, Object> kv : model.getProperties().entrySet()) {
+					
+						String attribute = ChartWidget.normalizeName(kv.getKey());
+						
+						Transformer<Number, Integer> grouper = propertyToGrouper.get(attribute);
+						if(grouper != null) {
+						
+						
+							Double value = model.get(attribute);
+							Integer groupValue = grouper.transform(value);
+							model.set(attribute + "_group", groupValue);
+							
+							GWT.log("Grouping: " + value + ", " + groupValue);
+						}
+						
+						//value = model.get(attribute);
+						/*
+						model.set("recall_group", grouper.transform(value));
+	
+						
+						Double precision = tryParseDouble(entry.getValue().get("precision"));
+						if(precision == null) {
+							continue;
+						}
+					
+						GWT.log("name :" + entry.getValue().get("name") + " prec: " + entry.getValue().get("precision"));
+						*/
 					}
 					
-					GWT.log("name :" + entry.getValue().get("name") + " prec: " + entry.getValue().get("precision"));
-					
 					evalStore.add(entry.getValue());
-				}
-			
+				}			
 				
 				GroupingStore<Model> store = Registry.get(Constants.EVALUATION_STORE);
 				store.removeAll();
 				store.add(evalStore.getModels());
+
+				store.groupBy("precision_group");
+
 				
 				
 				resetOverviewChart(activeMeasureIndex);

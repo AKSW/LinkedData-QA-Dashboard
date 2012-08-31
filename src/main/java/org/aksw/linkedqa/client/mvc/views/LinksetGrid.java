@@ -299,7 +299,7 @@ public class LinksetGrid extends ContentPanel {
 	    view.setGroupRenderer(new GridGroupRenderer() {  
 	      public String render(GroupColumnData data) {
 	    	  // . data.field
-	    	  String groupName = data.gvalue.toString(); //cm.getColumnById(data.field).getHeader();
+	    	  String groupName = data.gvalue != null ? data.gvalue.toString() : ""; //cm.getColumnById(data.field).getHeader();
 	    	  
 	    	  return groupName;
 	        /*

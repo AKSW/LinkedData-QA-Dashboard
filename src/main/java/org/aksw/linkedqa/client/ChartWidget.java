@@ -10,9 +10,11 @@ package org.aksw.linkedqa.client;
 
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
+import java.util.Set;
 
 import org.aksw.linkedqa.shared.MyChart;
 
@@ -39,6 +41,27 @@ import com.extjs.gxt.ui.client.widget.layout.TableLayout;
 import com.google.gwt.core.client.GWT;
 import com.google.gwt.user.client.Element;
 import com.google.gwt.user.client.ui.Widget;
+
+
+class MetricsData {
+	private Map<Number, Number> before;
+	private Map<Number, Number> after;
+	
+	public MetricsData(Map<Number, Number> before, Map<Number, Number> after) {
+		super();
+		this.before = before;
+		this.after = after;
+	}
+
+	public Map<Number, Number> getBefore() {
+		return before;
+	}
+	public Map<Number, Number> getAfter() {
+		return after;
+	}
+}
+
+
 
 
 public class ChartWidget extends LayoutContainer {
@@ -175,32 +198,22 @@ public class ChartWidget extends LayoutContainer {
 	}
 
 	
-	public ChartModel createModel(MyChart data) {
-		ChartModel model = new ChartModel(data.getType(), "font-size: 14px; font-family: Verdana; text-align: center;");
-		model.setBackgroundColour("#fffff5");
-		model.setScaleProvider(ScaleProvider.ROUNDED_NEAREST_SCALE_PROVIDER);
-		//Legend lg = new Legend(Position.RIGHT, true);
-		//lg.setPadding(10);
-		//cm.setLegend(lg);
-		//MessageBox.info("info", "moo", null);
-		
-		
-		
-		BarChart bc = new CylinderBarChart();
-		//bc.setTooltip("#label# $#val#M<br>#percent#");
-		//bc.setsetColours("#ff0000", "#00aa00", "#0000ff", "#ff9900", "#ff00ff");
+	public static MetricsData parseMetricsData(String data) {
 
-		String[] lines = data.getData().split("\n");
-		
-		
-		List<BarChart> charts = new ArrayList<BarChart>();
+		String[] lines = data.split("\n");
 
+		
+		Map<Number, Number> before = new HashMap<Number, Number>();
+		Map<Number, Number> after = new HashMap<Number, Number>();
+		
+		
 		for(String line : lines) {
 			if(line.startsWith("#")) {
 				continue;
 			}
 						
 			//List<BarChart.Bar> bars = new ArrayList<BarChart.Bar>();
+ 
 			
 			String[] fields = line.split("\t");
 			if(fields.length < 2) {
@@ -210,21 +223,75 @@ public class ChartWidget extends LayoutContainer {
 			String first = fields[0];
 			Number x = Double.parseDouble(first);
 			
-			for(int i = 0; i < fields.length - 1; ++i) {
-				while(charts.size() < (fields.length - 1)) {
-					charts.add(new BarChart());
-				}
-				
+			for(int i = 0; i < fields.length - 1; ++i) {				
 				String str = fields[i + 1];
 				Number value = Double.parseDouble(str);
 
-				charts.get(i).addBars(new CylinderBarChart.Bar(value));
-				//bars.add(new CylinderBarChart.Bar(value));
-				
+				if(i == 0) {
+					before.put(x, value);
+				} else if(i == 1) {
+					after.put(x, value);
+				} else {
+					throw new RuntimeException("Should not happen");
+				}				
 			}
 		}		
+
+		return new MetricsData(before, after);
+	}
+	
+	public static <T> T coalesce(T a, T b) {
+		return a == null ? b : a;
+	}
+	
+	public ChartModel createModel(MyChart data) {
+		ChartModel model = new ChartModel(data.getType(), "font-size: 14px; font-family: Verdana; text-align: center;");
+		
+		
+		
+		
+		model.setBackgroundColour("#fffff5");
+		//model.setScaleProvider(ScaleProvider.ROUNDED_NEAREST_SCALE_PROVIDER);
+		//Legend lg = new Legend(Position.RIGHT, true);
+		//lg.setPadding(10);
+		//cm.setLegend(lg);
+		//MessageBox.info("info", "moo", null);
+
+		
+		
+		BarChart bc = new CylinderBarChart();
+		List<BarChart> charts = new ArrayList<BarChart>();
+		//bc.setTooltip("#label# $#val#M<br>#percent#");
+		//bc.setsetColours("#ff0000", "#00aa00", "#0000ff", "#ff9900", "#ff00ff");
+
+		
+		BarChart bc0 = new BarChart();
+		BarChart bc1 = new BarChart();
 				
 		
+		
+		MetricsData m = parseMetricsData(data.getData()); 
+
+		
+		
+		Set<Number> keys = new HashSet<Number>();
+				
+		keys.addAll(m.getBefore().keySet());
+		keys.addAll(m.getAfter().keySet());
+		
+		
+		for(Number key : keys) {
+			Number beforeValue = coalesce(m.getBefore().get(key), 0.0);			
+			//charts.get(0).addBars(new CylinderBarChart.Bar(beforeValue));
+			bc0.addBars(new CylinderBarChart.Bar(beforeValue));
+
+			Number afterValue = coalesce(m.getBefore().get(key), 0.0);			
+			bc1.addBars(new CylinderBarChart.Bar(afterValue));
+		}
+
+		charts.add(new BarChart());
+		charts.add(new BarChart());
+
 		
 		//MessageBox.info("info", "" + charts.size(), null);
 		for(BarChart chart : charts) {
@@ -233,16 +300,6 @@ public class ChartWidget extends LayoutContainer {
 		
 		
 		//cm.addCh(listener);
-		
-		/*
-		CSVReader csv = new CSVReader(reader, '\t');
-		String[] line;
-		while((line = csv.readNext()) != null) {
-			System.out.println(line.length);
-		}
-		*/
-		
-		
 		
 		
 		return model;		
