@@ -1,14 +1,21 @@
 package org.linkeddata.qa;
 
+import java.io.ByteArrayOutputStream;
+import java.io.PrintStream;
+import java.util.Arrays;
+
 import javax.ws.rs.Consumes;
 import javax.ws.rs.FormParam;
 import javax.ws.rs.GET;
 import javax.ws.rs.POST;
 import javax.ws.rs.Path;
+import javax.ws.rs.PathParam;
 import javax.ws.rs.Produces;
 import javax.ws.rs.QueryParam;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.StreamingOutput;
+
+import jena.eyeball;
 
 import org.aksw.commons.sparql.api.core.QueryExecutionFactory;
 import org.aksw.commons.sparql.api.core.QueryExecutionStreaming;
@@ -54,10 +61,19 @@ public class RestService {
 	*/
 
 	@GET
-	public String test()
+	public String eyeball(@PathParam("filename") String filename)
 			throws Exception
 	{
-		return "Hi";
+			
+		ByteArrayOutputStream baos = new ByteArrayOutputStream();
+		PrintStream ps = new PrintStream(baos);
+		eyeball.main(Arrays.asList("","","/home/joerg/java-workspace/Linked-Data-QA/src/test/links.nt").toArray(new String[0]), ps);
+		
+		
+		
+		
+		
+		return baos.toString();
 	}
 
 
