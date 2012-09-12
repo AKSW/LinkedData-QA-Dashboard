@@ -237,7 +237,8 @@ public class LinkAnalyser {
 		
 		for(Statement stmt : refset.listStatements().toSet()) {
 			if(stmt.getObject().isResource()) {
-				if(linkset.contains(stmt.getObject().asResource(), stmt.getPredicate(), stmt.getSubject())) {
+				if(!linkset.contains(stmt) &&
+					linkset.contains(stmt.getObject().asResource(), stmt.getPredicate(), stmt.getSubject())) {
 					result.add(stmt);
 				}
 			}

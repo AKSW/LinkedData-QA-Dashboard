@@ -6,6 +6,8 @@ import java.util.Calendar;
 import java.util.List;
 
 public class Linkset {
+	private String id;
+
 	private Calendar date;
 	private String specAuthorName;
 	private String comment;
@@ -14,6 +16,14 @@ public class Linkset {
 	private File file;
 	
 	private List<Evaluation> evaluations = new ArrayList<Evaluation>();
+	
+	public String getId() {
+		return id;
+	}
+	
+	public void setId(String id) {
+		this.id = id;
+	}
 	
 	public List<Evaluation> getEvaluations() {
 		return evaluations;

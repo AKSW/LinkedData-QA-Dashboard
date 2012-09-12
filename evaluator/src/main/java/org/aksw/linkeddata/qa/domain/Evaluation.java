@@ -4,11 +4,21 @@ import java.io.File;
 import java.util.Calendar;
 
 public class Evaluation {
+	private String id;
 	private String authorName;
 	private Calendar timestamp;
 	
 	private File positiveRefsetFile;
 	private File negativeRefsetFile;
+	
+	public String getId() {
+		return id;
+	}
+	
+	public void setId(String id) {
+		this.id = id;
+	}
+	
 	public String getAuthorName() {
 		return authorName;
 	}

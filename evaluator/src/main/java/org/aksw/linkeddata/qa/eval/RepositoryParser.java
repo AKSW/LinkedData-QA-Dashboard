@@ -23,9 +23,9 @@ import org.slf4j.LoggerFactory;
 import com.hp.hpl.jena.rdf.model.Model;
 import com.hp.hpl.jena.rdf.model.ModelFactory;
 
-public class RepositoryRdfConverter {
+public class RepositoryParser {
 
-	private static final Logger logger = LoggerFactory.getLogger(RepositoryRdfConverter.class);
+	private static final Logger logger = LoggerFactory.getLogger(RepositoryParser.class);
 	
 	//private DateFormat dateFormat = ISO8601Utils.createDateFormat();
 	private DateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd HH:mm:ssZ");
@@ -38,6 +38,12 @@ public class RepositoryRdfConverter {
 	 * (sample.nt) -> could be computed automatically if not exists 
 	 * 
 	 */
+	
+	public static String strToId(String str) {
+		String result = org.aksw.commons.util.strings.StringUtils.urlEncode(str.trim().toLowerCase().replaceAll("\\s+", " "));
+		return result;
+	}
+
 	
 	/**
 	 * a link qa dir is comprised of:
@@ -72,11 +78,11 @@ public class RepositoryRdfConverter {
 	 * @throws ParseException 
 	 * @throws IOException 
 	 */
-	public Linkset indexLinkset(File linksetDir) throws ParseException, IOException {
+	public Linkset indexLinkset(String branchId, File linksetDir) throws ParseException, IOException {
 		logger.debug("Processing linking project dir '" + linksetDir + "'");
 
-		String id = linksetDir.getName();
-		String name = id;
+		String linksetId = branchId + "-" + strToId(linksetDir.getName());
+		String name = linksetId;
 
 		LoggerCount loggerCount = new LoggerCount(logger);
 		
@@ -117,7 +123,8 @@ public class RepositoryRdfConverter {
 		//Ini
 		
 		Linkset linkset = new Linkset();
-
+		linkset.setId(linksetId);
+		linkset.setSpecAuthorName(authorName);
 		linkset.setFile(linksetFile);
 		linkset.setRevisionName(name);
 		linkset.setDate(cal);
@@ -138,7 +145,11 @@ public class RepositoryRdfConverter {
 		}
 
 		if(positiveRefsetFile.exists() && negativeRefsetFile.exists()) {
+			String evalLocalId = strToId(authorName);
+			String evalId = linksetId + "-eval-" + evalLocalId;
+			
 			Evaluation evaluation = new Evaluation();
+			evaluation.setId(evalId);
 			evaluation.setTimestamp(cal);
 			evaluation.setAuthorName(authorName);
 			evaluation.setPositiveRefsetFile(positiveRefsetFile);
@@ -174,8 +185,8 @@ public class RepositoryRdfConverter {
 	{
 		logger.debug("Processing linking project dir '" + projectDir + "'");
 
-		String id = projectDir.getName();
-		String name = id;
+		String id = strToId(projectDir.getName());
+		String name = projectDir.getName();
 
 
 		File metadataFile = new File(projectDir.getAbsolutePath() + "/metadata.ini");
@@ -202,15 +213,21 @@ public class RepositoryRdfConverter {
 		project.setId(id);
 		project.setName(name);
 
+		
+		String branchName = "default";
+		String branchId = project.getId() + "-" + branchName;
+
 		for(File file : projectDir.listFiles()) {
 			if(!file.isDirectory()) {
 				continue;
 			}
 			
-			Linkset linkset = indexLinkset(file);
+			Linkset linkset = indexLinkset(branchId, file);
 			if(linkset != null) {
+				
 				LinkingBranch branch = new LinkingBranch();
-				branch.setName("default");
+				branch.setId(branchId);
+				branch.setName(branchName);
 				branch.getLinksets().add(linkset);
 				
 				project.getBranches().add(branch);

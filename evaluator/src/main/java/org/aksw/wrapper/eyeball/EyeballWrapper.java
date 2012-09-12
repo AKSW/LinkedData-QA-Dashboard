@@ -3,6 +3,7 @@ package org.aksw.wrapper.eyeball;
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.File;
+import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.util.Map;
@@ -48,8 +49,7 @@ public class EyeballWrapper
 		this.executable = executable;
 	}
 	
-	public Model check(File file, Map<String, String> options)
-		throws Exception
+	public Model check(File file, Map<String, String> options) throws IOException, InterruptedException
 	{
 		String cmd = executable.getAbsolutePath();
         
@@ -70,9 +70,11 @@ public class EyeballWrapper
         }
 
         process.waitFor();
+        /*
         if(process.exitValue() != 0) {
             throw new RuntimeException(out.toString());
         }
+        */
 
         String str = out.toString();
         Model model = ModelFactory.createDefaultModel();
