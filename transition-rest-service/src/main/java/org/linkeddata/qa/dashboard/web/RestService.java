@@ -13,6 +13,8 @@ import javax.ws.rs.QueryParam;
 import javax.ws.rs.core.Context;
 import javax.ws.rs.core.MediaType;
 
+import org.linkeddata.qa.dashboard.domain.LinksetMetadata;
+
 import com.google.gson.Gson;
 
 
@@ -37,7 +39,7 @@ public class RestService {
 	
 
 	@GET
-	@Path("/detail")
+	@Path("/details")
 	@Produces(MediaType.APPLICATION_JSON)
 	public String getDetailData(@QueryParam("id") String id)
 			throws Exception
@@ -59,10 +61,10 @@ public class RestService {
 	public String getSummary()
 			throws Exception
 	{
-		List<String> list = new ArrayList<String>();
+		List<LinksetMetadata> list = new ArrayList<LinksetMetadata>();
 
-		list.add("entry1");
-		list.add("entry2");
+		list.add(new LinksetMetadata("Cities", "http://linkedgedata.org/sparql", "http://dbpedia.org/sparql", 1000));
+		list.add(new LinksetMetadata("Pubs", "http://linkedgedata.org/sparql", "http://dbpedia.org/sparql", 1000));
 		
 		Gson gson = new Gson();
 		String result = gson.toJson(list);

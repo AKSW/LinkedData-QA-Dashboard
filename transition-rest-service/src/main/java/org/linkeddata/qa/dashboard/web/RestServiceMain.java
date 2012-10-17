@@ -13,6 +13,7 @@ import org.slf4j.LoggerFactory;
 
 import com.sun.jersey.spi.container.servlet.ServletContainer;
 
+
 public class RestServiceMain {
 	/**
 	 * @param exitCode
@@ -51,7 +52,7 @@ public class RestServiceMain {
 
 		
 		// Parsing of command line args
-		String portStr = commandLine.getOptionValue("P", "5319");
+		String portStr = commandLine.getOptionValue("P", "5533");
 		//String backLogStr = commandLine.getOptionValue("B", "100");
 		//String contextStr = commandLine.getOptionValue("C", "/sparqlify");
 		int port = Integer.parseInt(portStr);
