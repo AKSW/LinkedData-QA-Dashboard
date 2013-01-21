@@ -78,7 +78,6 @@ public class RestServiceMain {
 		Server server = new Server(port);
 		Context context = new Context(server, "/", Context.SESSIONS);
 		context.addServlet(sh, "/*");
-		
 
 		server.start();
 	}
