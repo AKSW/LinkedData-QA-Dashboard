@@ -1,0 +1,142 @@
+<!DOCTYPE HTML>
+<html>
+<head>
+ <!-- CSS dependencies -->
+<link type="text/css" rel="stylesheet" href="css/bootstrap.css">
+
+</head>
+<body>
+
+<!------------------------------------------------------------------>
+<div id="header">
+    <img src="img/AKSW_Logo.png" >
+    <img src="img/latc-logo.gif" >
+</div>
+<div class="well well-large">
+<p align="justify">
+<b>
+	
+This page presents a linksets inventory as an addition to Quality Assurrance Dashboard. The data of the linkset inventory are derived from the Linkset API 
+(http://linker.sindice.com/runtime-results/). <br>
+The provided information include:  link-set,source dataset,target dataset,interlinnking	type,number of triples, and downloads.In downloads the specifications and links files
+for the link-set are accessed.
+
+</b>
+</p>
+</div>
+
+<br>
+<form id="linksTablesfrm2" class="well span20" >
+	<div id= "linksTablesdiv" class="span3">
+		<table id="tbll" class="table table-bordered table-hover">
+			<thead>
+				<tr>
+					<th>Task name</th>
+					<th>Source</th>
+					<th>Target</th>
+					<th>Type</th>
+					<th>Triples No</th>
+					<th>Date</th>
+					<th>Downloads</th>
+				</tr>
+			</thead>
+			<tbody>
+			</tbody>
+		</table>
+	</div>
+
+</form> 
+<br>
+
+ <!-- JS dependencies -->
+<script type="text/javascript" src="https://ajax.googleapis.com/ajax/libs/jquery/1.8.2/jquery.min.js"></script>
+<script type="text/javascript" src="js/bootstrap.min.js"></script>
+<script type="text/javascript" src="js/jquery.fileDownload.js"></script>
+<script type="text/javascript" src="js/jquery.tablesorter.js"></script>
+<script type="text/javascript" src="js/jquery-latest.js"></script>
+<script type="text/javascript" src="js/json2.js"></script>
+
+<script type="text/javascript" src="http://ajax.googleapis.com/ajax/libs/jquery/1.3.2/jquery.min.js"></script>
+<script type="text/javascript">
+
+</script>
+
+ <script type="text/javascript">
+     var totallinks =0;
+	function init() 
+	{
+		var numberOfAttributes= 11;
+		$.get("http://localhost/linkqa/summary", function(json) 
+		{// the get function connects to the service running on the specied url and the retrieved information will passed to it as "json" 
+			var myJSONObject = JSON.parse(json);  // assign json to an object
+			var infoArray=[];
+			for(var i=0; i<myJSONObject.data.length;i++)
+			{
+			infoArray[i]={FileName:myJSONObject.data[i].FileName,Source:myJSONObject.data[i].Source,Target:myJSONObject.data[i].Target,
+				LinkingType:myJSONObject.data[i].LinkingType,TriplesNo:myJSONObject.data[i].TriplesNo,revisionDate:myJSONObject.data[i].revisionDate,
+				taskSetName:myJSONObject.data[i].taskSetName,linksFile:myJSONObject.data[i].linksFile};
+			} 
+			createDynamicTable2($("#tbll"),infoArray);
+
+		});        
+	}
+
+	 $(document).ready(function() 
+	 {
+				init();
+				
+	 });// The end of document load function
+    function createDynamicTable2(tbody,infoArray) 
+  	{
+					
+			if (tbody == null || tbody.length < 1) return; //check number of rows and columns
+			
+			for (var r = 0; r < infoArray.length; r++) 
+			{ 
+				//prepare data
+				var row=infoArray[r];
+				var taskname= row.taskSetName ?  row.taskSetName : ""; // this gets the text value instead of JSON.stringify(infoArray[r].taskSetName, null, 4) that returns string with double qoutes
+				var source= row.Source ?  row.Source : "";
+				var target= row.Target ?  row.Target : "";
+				var linkingtype= row.LinkingType ?  row.LinkingType : "";
+				linkingtype=$.trim(linkingtype);
+				var triplesno= row.TriplesNo ?  row.TriplesNo : "";								
+				var revisiondat= row.revisionDate ?  row.revisionDate : "";
+				totallinks+=triplesno;
+				//for each row 
+               var trow = $("<tr class=\"info\">");	//create row open tag
+               $("<td width= \"5%\" title=\"Task Name\"/>").addClass("tableCell").text(taskname).data("col", 0).appendTo(trow);
+               $("<td width= \"5%\" title=\"Source\"/>").addClass("tableCell").text(source).data("col", 1).appendTo(trow);
+               $("<td width= \"5%\" title=\"Target\"/>").addClass("tableCell").text(target).data("col", 2).appendTo(trow);
+               $("<td width= \"5%\" title=\"Revision Date\"/>").addClass("tableCell").text(revisiondat).data("col", 3).appendTo(trow);
+               $("<td width= \"5%\" title=\"TriplesNo\"/>").addClass("tableCell").text(triplesno).data("col", 4).appendTo(trow);
+               var links= infoArray[r].linksFile;
+				var specs = infoArray[r].FileName;
+               
+               var btnele=$("<a href=downloading.php?filename="+links+">links</a>"+
+                           " <br> <a href=downloading.php?filename="+specs+">specs</a>");
+               btnele.appendTo($("<td>").appendTo(trow));
+              trow.appendTo(tbody);
+               $("<td width= \"5%\" title=\"Linking Type\"/>").addClass("tableCell").text(linkingtype).data("col", 5).appendTo(trow);
+					
+				
+            }
+            document.getElementById("tot").value = totallinks;
+      } 
+   
+
+</script>
+<br>
+<center>
+<table border="1">
+  
+  <tr>
+    <td><label id="totallbl"> <b> The total number of links: </b></label></td>
+    <td><input type="" id="tot" name="first_name" value="" width="300" maxlength="500" readonly /></td>
+    
+  </tr>
+</table>
+ </center>
+ <!--<a href="http://linker.sindice.com/runtime-results/2011-02-10/dbpedia-lgd_airport.xml/links.nt" download="MyGoogleLogo">download me</a> -->
+</body>
+</html>
